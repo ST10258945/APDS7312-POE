@@ -7,10 +7,109 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Basic user model (can be used for general authentication)
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// Customer model for international payments
+model Customer {
+  id            String   @id @default(cuid())
+  fullName      String   // Validated with FULL_NAME regex
+  idNumber      String   @unique // South African ID number (13 digits)
+  accountNumber String   // Bank account number (8-12 digits)
+  username      String   @unique // Username for login
+  email         String   @unique // Email address
+  passwordHash  String   // Hashed password
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  payments      Payment[]
+  
+  @@map("customers")
+}
+
+// Employee model for staff portal
+model Employee {
+  id           String   @id @default(cuid())
+  employeeId   String   @unique // Employee ID (alphanumeric)
+  fullName     String   // Full name
+  email        String   @unique // Email address
+  passwordHash String   // Hashed password
+  isActive     Boolean  @default(true) // Account status
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  verifiedPayments Payment[] @relation("PaymentVerifier")
+  
+  @@map("employees")
+}
+
+// Payment model for international transactions
+model Payment {
+  id                String          @id @default(cuid())
+  transactionId     String          @unique // System-generated transaction ID
+  
+  // Customer information
+  customerId        String
+  customer          Customer        @relation(fields: [customerId], references: [id])
+  
+  // Payment details
+  amount            String          // Stored as string to preserve precision
+  currency          String          // ISO 4217 currency code (3 letters)
+  provider          String          // Payment provider (e.g., SWIFT)
+  
+  // Recipient information
+  recipientName     String          // Name of payment recipient
+  recipientAccount  String          // Recipient's account number
+  swiftCode         String          // SWIFT/BIC code
+  paymentReference  String?         // Optional payment reference
+  
+  // Status tracking
+  status            PaymentStatus   @default(PENDING)
+  
+  // Employee verification
+  verifiedById      String?         // Employee who verified the payment
+  verifiedBy        Employee?       @relation("PaymentVerifier", fields: [verifiedById], references: [id])
+  verifiedAt        DateTime?
+  
+  // Timestamps
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  submittedToSwift  DateTime?       // When submitted to SWIFT
+  
+  @@map("payments")
+}
+
+// Payment status enumeration
+enum PaymentStatus {
+  PENDING     // Awaiting employee verification
+  VERIFIED    // Verified by employee, ready for SWIFT
+  SUBMITTED   // Submitted to SWIFT
+  COMPLETED   // Payment completed
+  REJECTED    // Payment rejected
+  CANCELLED   // Payment cancelled
+  
+  @@map("payment_status")
+}
+
+// Audit log for security monitoring
+model AuditLog {
+  id          String   @id @default(cuid())
+  entityType  String   // Type of entity (Customer, Employee, Payment)
+  entityId    String   // ID of the affected entity
+  action      String   // Action performed (CREATE, UPDATE, DELETE, LOGIN, etc.)
+  userId      String?  // User who performed the action
+  ipAddress   String?  // IP address of the user
+  userAgent   String?  // User agent string
+  metadata    String?  // Additional metadata (JSON)
+  timestamp   DateTime @default(now())
+  
+  @@map("audit_logs")
 }

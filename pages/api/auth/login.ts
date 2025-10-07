@@ -1,18 +1,92 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { prisma } from '../../../lib/db'               // <- relative path
-import { verifyPassword, signJwt } from '../../../lib/auth' // <- relative path
+import { prisma } from '../../../lib/db'
+import { verifyPassword, signJwt } from '../../../lib/auth'
+import { validateEmail, validatePassword, validateFields, containsInjectionPatterns } from '../../../lib/validation'
 
+/**
+ * Login API with comprehensive RegEx input validation
+ * Implements whitelisting approach to prevent injection attacks
+ */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end()
-  const { email, password } = req.body || {}
-  if (!email || !password) return res.status(400).json({ error: 'Missing fields' })
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
 
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' })
+  try {
+    const { email, password } = req.body || {}
 
-  const ok = await verifyPassword(password, user.passwordHash)
-  if (!ok) return res.status(401).json({ error: 'Invalid credentials' })
+    // Check for missing fields
+    if (!email || !password) {
+      return res.status(400).json({ 
+        error: 'Missing required fields', 
+        details: 'Email and password are required' 
+      })
+    }
 
-  const token = signJwt({ sub: user.id, email })
-  return res.status(200).json({ token })
+    // Comprehensive input validation using RegEx patterns
+    const validationSchema = {
+      email: validateEmail,
+      password: (pwd: string) => {
+        // For login, we just check if password format is valid (no specific requirements)
+        if (!pwd || typeof pwd !== 'string') {
+          return { isValid: false, error: 'Password is required and must be a string' }
+        }
+        if (pwd.length < 1 || pwd.length > 128) {
+          return { isValid: false, error: 'Password length invalid' }
+        }
+        if (containsInjectionPatterns(pwd)) {
+          return { isValid: false, error: 'Password contains invalid characters' }
+        }
+        return { isValid: true, sanitized: pwd }
+      }
+    }
+
+    const validation = validateFields({ email, password }, validationSchema)
+
+    if (!validation.isValid) {
+      return res.status(400).json({ 
+        error: 'Invalid input format', 
+        details: validation.errors 
+      })
+    }
+
+    // Use sanitized inputs for database query
+    const sanitizedEmail = validation.sanitized.email
+    const sanitizedPassword = validation.sanitized.password
+
+    // Find user by email (using sanitized input)
+    const user = await prisma.user.findUnique({ 
+      where: { email: sanitizedEmail } 
+    })
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' })
+    }
+
+    // Verify password
+    const isValidPassword = await verifyPassword(sanitizedPassword, user.passwordHash)
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' })
+    }
+
+    // Generate JWT token
+    const token = signJwt({ 
+      sub: user.id, 
+      email: sanitizedEmail,
+      type: 'user'
+    })
+
+    return res.status(200).json({ 
+      token,
+      user: {
+        id: user.id,
+        email: user.email
+      }
+    })
+
+  } catch (error) {
+    console.error('Login error:', error)
+    return res.status(500).json({ error: 'Internal server error' })
+  }
 }
