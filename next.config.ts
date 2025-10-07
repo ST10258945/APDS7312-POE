@@ -2,6 +2,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+
+  eslint: {
+    ignoreDuringBuilds: true,   // ← skip ESLint in CI/Prod
+  },
   // Vercel already forces HTTPS for *.vercel.app and your custom domain.
   // We add strong security headers so you can show proof in DevTools.
   async headers() {

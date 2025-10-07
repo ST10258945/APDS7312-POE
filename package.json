@@ -28,5 +28,18 @@
     "prisma": "^6.16.3",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "trustedDependencies": [
+      "@prisma/client",
+      "prisma",
+      "@prisma/engines",
+      "@tailwindcss/oxide",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
+  "scripts": {
+    "postinstall": "prisma generate"
   }
 }
