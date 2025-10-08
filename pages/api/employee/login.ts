@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '../../../lib/db';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { serialize } from 'cookie';
+import { issueSessionCookie } from '@/lib/session'
 import { validateEmployeeId, validatePassword, /*validateIpAddress*/ } from '../../../lib/validation';
 
 // Local IP validator (since lib/validation has no export for validateIpAddress)
@@ -103,7 +102,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, employee.passwordHash);
-    
+
     if (!isValidPassword) {
       await prisma.auditLog.create({
         data: {
@@ -140,15 +139,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error('JWT_SECRET not configured');
     }
 
-    const token = jwt.sign(
-      { 
-        employeeId: employee.employeeId,
-        fullName: employee.fullName,
-        type: 'employee'
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '8h' } // Employee sessions expire in 8 hours
-    );
+    issueSessionCookie(res, {
+      employeeId: employee.employeeId,
+      fullName: employee.fullName,
+      type: 'employee'
+    }, { expiresIn: '8h', maxAgeSeconds: 60 * 60 * 8 })
+
 
     /*
     // Reset failed login attempts on successful login
@@ -164,15 +160,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const isProd = process.env.NODE_ENV === 'production'
 
-    // Set HttpOnly session cookie
-    res.setHeader('Set-Cookie', serialize('session', token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 8, // 8 hours for employees
-    }))
-
     // Log successful login
     await prisma.auditLog.create({
       data: {
@@ -181,7 +168,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         action: 'EMPLOYEE_LOGIN_SUCCESS',
         ipAddress: clientIp,
         userAgent: req.headers['user-agent'],
-        metadata: JSON.stringify({ })
+        metadata: JSON.stringify({})
       }
     });
 
@@ -197,7 +184,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error) {
     console.error('Employee login error:', error);
-    
+
     await prisma.auditLog.create({
       data: {
         entityType: 'Employee',

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { serialize } from 'cookie'
 import { prisma } from '@/lib/db'
-import { verifyPassword, signJwt } from '@/lib/auth'
+import { verifyPassword } from '@/lib/auth'
+import { issueSessionCookie } from '@/lib/session'
 import { validateUsername, validateFields, containsInjectionPatterns } from '@/lib/validation'
 
 /**
@@ -134,23 +134,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
-    // Generate JWT token for customer
-    const token = signJwt({
+    issueSessionCookie(res, {
       sub: customer.id,
       username: customer.username,
       email: customer.email,
       type: 'customer'
-    })
+    }, { expiresIn: '30m', maxAgeSeconds: 60 * 30 })
+
 
     const isProd = process.env.NODE_ENV === 'production'
-
-    res.setHeader('Set-Cookie', serialize('session', token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 30, // 30 minutes
-    }))
 
     // Log successful login
     await prisma.auditLog.create({
