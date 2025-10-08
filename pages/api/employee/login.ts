@@ -4,9 +4,22 @@ import bcrypt from 'bcryptjs';
 import { issueSessionCookie } from '@/lib/session'
 import { validateEmployeeId, validatePassword, /*validateIpAddress*/ } from '../../../lib/validation';
 
+// Best effort IP extractor works locally and behind proxies / CDNs
+function getClientIp(req: NextApiRequest): string {
+  const xfwd = req.headers['x-forwarded-for'] as string | undefined; 
+  const real = req.headers['x-real-ip'] as string | undefined;
+  const verc = req.headers['x-vercel-ip'] as string | undefined;
+  const raw  = req.socket?.remoteAddress;
+
+  const firstForwarded = xfwd?.split(',')[0]?.trim();
+  return firstForwarded || real || verc || raw || '127.0.0.1'; // safe fallback in dev
+}
+
+
 // Local IP validator (since lib/validation has no export for validateIpAddress)
 function validateIpAddress(ip: string | undefined | null): boolean {
-  if (!ip) return false
+  if (!ip) return false;
+  if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('::ffff:127.0.0.1')) return true;
   // Accept IPv4 or IPv6 (simple checks)
   const ipv4 = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)
   const ipv6 = /^[0-9a-fA-F:]+$/.test(ip)
@@ -21,37 +34,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { employeeId, password } = req.body;
 
+
+    const vEmp = validateEmployeeId(employeeId)
     // Validate all inputs using RegEx patterns
-    if (!validateEmployeeId(employeeId)) {
+    if (!vEmp.isValid) {
+      const clientIp = getClientIp(req)
       await prisma.auditLog.create({
         data: {
           entityType: 'Employee',
           entityId: 'unknown',
           action: 'EMPLOYEE_LOGIN_FAILED',
-          ipAddress: req.socket.remoteAddress || 'unknown',
+          ipAddress: clientIp,
           userAgent: req.headers['user-agent'],
-          metadata: JSON.stringify({ reason: 'Invalid employee ID format' })
+          metadata: JSON.stringify({ reason: vEmp.error })
         }
       });
       return res.status(400).json({ error: 'Invalid employee ID format' });
     }
 
-    if (!validatePassword(password)) {
+    const sanitizedEmployeeId = vEmp.sanitized ?? employeeId
+
+    const vPwd = validatePassword(password)
+    if (!vPwd.isValid) {
+      const clientIp = getClientIp(req)
       await prisma.auditLog.create({
         data: {
           entityType: 'Employee',
           entityId: 'unknown',
           action: 'EMPLOYEE_LOGIN_FAILED',
-          ipAddress: req.socket.remoteAddress || 'unknown',
+          ipAddress: clientIp,
           userAgent: req.headers['user-agent'],
-          metadata: JSON.stringify({ reason: 'Invalid password format' })
+          metadata: JSON.stringify({ reason: vPwd.error })
         }
       });
-      return res.status(400).json({ error: 'Invalid password format' });
+      return res.status(400).json({ error: 'Invalid password format', details: vPwd.error });
     }
 
     // Validate IP address
-    const clientIp = req.socket.remoteAddress || '';
+    const clientIp = getClientIp(req);
+    const isProd = process.env.NODE_ENV === 'production';
+
+    if (isProd) {
     if (!validateIpAddress(clientIp)) {
       await prisma.auditLog.create({
         data: {
@@ -65,10 +88,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
       return res.status(400).json({ error: 'Invalid request source' });
     }
+  }
 
     // Find employee by employeeId
     const employee = await prisma.employee.findUnique({
-      where: { employeeId: employeeId }
+      where: { employeeId: sanitizedEmployeeId }
     });
 
     if (!employee) {
@@ -79,7 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           action: 'EMPLOYEE_LOGIN_FAILED',
           ipAddress: clientIp,
           userAgent: req.headers['user-agent'],
-          metadata: JSON.stringify({ reason: `Employee not found: ${employeeId}` })
+          metadata: JSON.stringify({ reason: `Employee not found: ${sanitizedEmployeeId}` })
         }
       });
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -109,7 +133,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           entityType: 'Employee',
           entityId: 'unknown',
           action: 'EMPLOYEE_LOGIN_FAILED',
-          ipAddress: req.socket.remoteAddress || 'unknown',
+          ipAddress: clientIp,
           userAgent: req.headers['user-agent'],
           metadata: JSON.stringify({ reason: 'Invalid password format' })
         }
@@ -158,8 +182,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     */
 
-    const isProd = process.env.NODE_ENV === 'production'
-
     // Log successful login
     await prisma.auditLog.create({
       data: {
@@ -185,12 +207,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     console.error('Employee login error:', error);
 
+    const clientIp = getClientIp(req)
     await prisma.auditLog.create({
       data: {
         entityType: 'Employee',
         entityId: 'unknown',
         action: 'EMPLOYEE_LOGIN_ERROR',
-        ipAddress: req.socket.remoteAddress || 'unknown',
+        ipAddress: clientIp,
         userAgent: req.headers['user-agent'],
         metadata: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' })
       }
