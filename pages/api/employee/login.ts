@@ -1,8 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '../../../lib/prisma';
-import bcrypt from 'bcrypt';
+import { prisma } from '../../../lib/db';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { validateEmployeeId, validatePassword, validateIpAddress } from '../../../lib/validation';
+import { serialize } from 'cookie';
+import { validateEmployeeId, validatePassword, /*validateIpAddress*/ } from '../../../lib/validation';
+
+// Local IP validator (since lib/validation has no export for validateIpAddress)
+function validateIpAddress(ip: string | undefined | null): boolean {
+  if (!ip) return false
+  // Accept IPv4 or IPv6 (simple checks)
+  const ipv4 = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)
+  const ipv6 = /^[0-9a-fA-F:]+$/.test(ip)
+  return ipv4 || ipv6
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -16,11 +26,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!validateEmployeeId(employeeId)) {
       await prisma.auditLog.create({
         data: {
+          entityType: 'Employee',
+          entityId: 'unknown',
           action: 'EMPLOYEE_LOGIN_FAILED',
-          details: 'Invalid employee ID format',
           ipAddress: req.socket.remoteAddress || 'unknown',
-          timestamp: new Date(),
-          severity: 'MEDIUM'
+          userAgent: req.headers['user-agent'],
+          metadata: JSON.stringify({ reason: 'Invalid employee ID format' })
         }
       });
       return res.status(400).json({ error: 'Invalid employee ID format' });
@@ -29,11 +40,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!validatePassword(password)) {
       await prisma.auditLog.create({
         data: {
+          entityType: 'Employee',
+          entityId: 'unknown',
           action: 'EMPLOYEE_LOGIN_FAILED',
-          details: 'Invalid password format',
           ipAddress: req.socket.remoteAddress || 'unknown',
-          timestamp: new Date(),
-          severity: 'MEDIUM'
+          userAgent: req.headers['user-agent'],
+          metadata: JSON.stringify({ reason: 'Invalid password format' })
         }
       });
       return res.status(400).json({ error: 'Invalid password format' });
@@ -44,11 +56,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!validateIpAddress(clientIp)) {
       await prisma.auditLog.create({
         data: {
+          entityType: 'Employee',
+          entityId: 'unknown',
           action: 'EMPLOYEE_LOGIN_BLOCKED',
-          details: 'Invalid IP address format',
           ipAddress: clientIp,
-          timestamp: new Date(),
-          severity: 'HIGH'
+          userAgent: req.headers['user-agent'],
+          metadata: JSON.stringify({ reason: 'Invalid IP address format' })
         }
       });
       return res.status(400).json({ error: 'Invalid request source' });
@@ -62,11 +75,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!employee) {
       await prisma.auditLog.create({
         data: {
+          entityType: 'Employee',
+          entityId: 'unknown',
           action: 'EMPLOYEE_LOGIN_FAILED',
-          details: `Employee not found: ${employeeId}`,
           ipAddress: clientIp,
-          timestamp: new Date(),
-          severity: 'MEDIUM'
+          userAgent: req.headers['user-agent'],
+          metadata: JSON.stringify({ reason: `Employee not found: ${employeeId}` })
         }
       });
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -76,11 +90,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!employee.isActive) {
       await prisma.auditLog.create({
         data: {
+          entityType: 'Employee',
+          entityId: employee.id,
           action: 'EMPLOYEE_LOGIN_BLOCKED',
-          details: `Inactive employee login attempt: ${employeeId}`,
           ipAddress: clientIp,
-          timestamp: new Date(),
-          severity: 'HIGH'
+          userAgent: req.headers['user-agent'],
+          metadata: JSON.stringify({ reason: 'Inactive employee' })
         }
       });
       return res.status(401).json({ error: 'Account is inactive' });
@@ -90,28 +105,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const isValidPassword = await bcrypt.compare(password, employee.passwordHash);
     
     if (!isValidPassword) {
-      // Increment failed login attempts
-      await prisma.employee.update({
-        where: { id: employee.id },
-        data: { 
-          failedLoginAttempts: employee.failedLoginAttempts + 1,
-          lastFailedLogin: new Date()
-        }
-      });
-
       await prisma.auditLog.create({
         data: {
+          entityType: 'Employee',
+          entityId: 'unknown',
           action: 'EMPLOYEE_LOGIN_FAILED',
-          details: `Invalid password for employee: ${employeeId}`,
-          ipAddress: clientIp,
-          timestamp: new Date(),
-          severity: 'MEDIUM'
+          ipAddress: req.socket.remoteAddress || 'unknown',
+          userAgent: req.headers['user-agent'],
+          metadata: JSON.stringify({ reason: 'Invalid password format' })
         }
       });
 
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    /*
     // Check if account is locked due to failed attempts
     if (employee.failedLoginAttempts >= 5) {
       await prisma.auditLog.create({
@@ -125,6 +133,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
       return res.status(401).json({ error: 'Account locked due to multiple failed attempts' });
     }
+      */
 
     // Generate JWT token
     if (!process.env.JWT_SECRET) {
@@ -134,7 +143,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const token = jwt.sign(
       { 
         employeeId: employee.employeeId,
-        role: employee.role,
         fullName: employee.fullName,
         type: 'employee'
       },
@@ -142,6 +150,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       { expiresIn: '8h' } // Employee sessions expire in 8 hours
     );
 
+    /*
     // Reset failed login attempts on successful login
     await prisma.employee.update({
       where: { id: employee.id },
@@ -151,26 +160,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         lastFailedLogin: null
       }
     });
+    */
+
+    // Set HttpOnly session cookie
+    res.setHeader('Set-Cookie', serialize('session', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 8, // 8 hours for employees
+    }))
 
     // Log successful login
     await prisma.auditLog.create({
       data: {
+        entityType: 'Employee',
+        entityId: employee.id,
         action: 'EMPLOYEE_LOGIN_SUCCESS',
-        details: `Employee ${employeeId} logged in successfully`,
         ipAddress: clientIp,
-        timestamp: new Date(),
-        severity: 'LOW'
+        userAgent: req.headers['user-agent'],
+        metadata: JSON.stringify({ })
       }
     });
 
+    // Do NOT return token in body
     res.status(200).json({
       message: 'Login successful',
-      token,
       employee: {
         employeeId: employee.employeeId,
         fullName: employee.fullName,
-        role: employee.role,
-        department: employee.department
+        email: employee.email
       }
     });
 
@@ -179,11 +198,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     await prisma.auditLog.create({
       data: {
+        entityType: 'Employee',
+        entityId: 'unknown',
         action: 'EMPLOYEE_LOGIN_ERROR',
-        details: `System error during employee login: ${error instanceof Error ? error.message : 'Unknown error'}`,
         ipAddress: req.socket.remoteAddress || 'unknown',
-        timestamp: new Date(),
-        severity: 'HIGH'
+        userAgent: req.headers['user-agent'],
+        metadata: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' })
       }
     });
 

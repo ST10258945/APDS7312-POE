@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { serialize } from 'cookie'
 import { prisma } from '../../../lib/db'
 import { verifyPassword, signJwt } from '../../../lib/auth'
 import { validateEmail, validatePassword, validateFields, containsInjectionPatterns } from '../../../lib/validation'
@@ -77,8 +78,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       type: 'user'
     })
 
+    res.setHeader('Set-Cookie', serialize('session', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 30, // 30 minutes
+    }))
+
+    // Do NOT return token in body
     return res.status(200).json({ 
-      token,
       user: {
         id: user.id,
         email: user.email
