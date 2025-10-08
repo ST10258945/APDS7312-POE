@@ -142,9 +142,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       type: 'customer'
     })
 
+    const isProd = process.env.NODE_ENV === 'production'
+
     res.setHeader('Set-Cookie', serialize('session', token, {
       httpOnly: true,
-      secure: true,
+      secure: isProd,
       sameSite: 'strict',
       path: '/',
       maxAge: 60 * 30, // 30 minutes

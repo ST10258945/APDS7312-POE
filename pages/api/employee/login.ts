@@ -162,10 +162,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     */
 
+    const isProd = process.env.NODE_ENV === 'production'
+
     // Set HttpOnly session cookie
     res.setHeader('Set-Cookie', serialize('session', token, {
       httpOnly: true,
-      secure: true,
+      secure: isProd,
       sameSite: 'strict',
       path: '/',
       maxAge: 60 * 60 * 8, // 8 hours for employees
