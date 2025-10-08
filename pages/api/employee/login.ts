@@ -164,6 +164,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     issueSessionCookie(res, {
+      sub: employee.id, 
       employeeId: employee.employeeId,
       fullName: employee.fullName,
       type: 'employee'

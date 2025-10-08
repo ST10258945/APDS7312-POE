@@ -1,7 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
 import jwt from 'jsonwebtoken'
-import { 
+import { verifyJwt } from '@/lib/auth'
+
+import {
   validateAmount,
   validateCurrencyCode,
   validateProviderName,
@@ -33,52 +35,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Verify JWT token and extract customer information
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        error: 'Authentication required',
-        details: 'Valid authentication token must be provided'
-      })
+    const sessionToken = req.cookies.session
+    const session = sessionToken ? verifyJwt<any>(sessionToken) : null
+    if (!session || session.type !== 'customer') {
+      return res.status(401).json({ error: 'Not authenticated' })
     }
-
-    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
-    let tokenPayload: any
-
-    try {
-      tokenPayload = jwt.verify(token, process.env.JWT_SECRET!)
-      if (tokenPayload.type !== 'customer') {
-        return res.status(403).json({ 
-          error: 'Access denied',
-          details: 'Only customers can create payments'
-        })
-      }
-    } catch (error) {
-      return res.status(401).json({ 
-        error: 'Invalid token',
-        details: 'Authentication token is invalid or expired'
-      })
-    }
-
-    const customerId = tokenPayload.sub
+    const customerId = session.sub
 
     // Extract payment data from request body
-    const { 
-      amount, 
-      currency, 
-      provider, 
-      recipientName, 
-      recipientAccount, 
-      swiftCode, 
-      paymentReference 
+    const {
+      amount,
+      currency,
+      provider,
+      recipientName,
+      recipientAccount,
+      swiftCode,
+      paymentReference
     } = req.body || {}
 
     // Check for missing required fields
     const requiredFields = ['amount', 'currency', 'provider', 'recipientName', 'recipientAccount', 'swiftCode']
     const missingFields = requiredFields.filter(field => !req.body[field])
-    
+
     if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        error: 'Missing required fields', 
+      return res.status(400).json({
+        error: 'Missing required fields',
         details: `The following fields are required: ${missingFields.join(', ')}`
       })
     }
@@ -108,9 +89,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const validation = validateFields(dataToValidate, validationSchema)
 
     if (!validation.isValid) {
-      return res.status(400).json({ 
-        error: 'Invalid input format', 
-        details: validation.errors 
+      return res.status(400).json({
+        error: 'Invalid input format',
+        details: validation.errors
       })
     }
 
@@ -123,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     if (!customer) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'Customer not found',
         details: 'Authentication token refers to non-existent customer'
       })
@@ -165,9 +146,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         entityId: payment.id,
         action: 'CREATE',
         userId: customerId,
-        ipAddress: req.headers['x-forwarded-for']?.toString() || req.connection.remoteAddress,
+        ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress,
         userAgent: req.headers['user-agent'],
-        metadata: JSON.stringify({ 
+        metadata: JSON.stringify({
           transactionId: payment.transactionId,
           amount: sanitizedData.amount,
           currency: sanitizedData.currency,
@@ -177,7 +158,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
-    return res.status(201).json({ 
+    return res.status(201).json({
       message: 'Payment created successfully and awaiting verification',
       payment: {
         id: payment.id,
@@ -200,7 +181,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error) {
     console.error('Payment creation error:', error)
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Internal server error',
       details: 'Failed to create payment. Please try again.'
     })
