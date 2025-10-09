@@ -30,7 +30,7 @@ async function main() {
     // 1) prev link check
     if ((r.prevHash ?? null) !== (prevHash ?? null)) {
       brokenLinks++
-      console.error(`✖ Prev-link mismatch at id=${r.id}`)
+      console.error(`:( Prev-link mismatch at id=${r.id}`)
     }
 
     // 2) recompute hash using canonical form
@@ -47,7 +47,7 @@ async function main() {
 
     if (recomputed !== r.hash) {
       badHashes++
-      console.error(`✖ Hash mismatch at id=${r.id}`)
+      console.error(`:( Hash mismatch at id=${r.id}`)
     }
 
     prevHash = r.hash
