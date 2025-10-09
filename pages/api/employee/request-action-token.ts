@@ -22,12 +22,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Action token payload: sub = employeeId, action, jti, aud
     const token = signJwt({
+      iss: 'bank-portal',
       sub: session.sub,
       employeeId: session.employeeId ?? session.sub,
       action,
       jti,
       aud: 'action-token'
-    }, { expiresIn: '5m' })
+    }, { expiresIn: '5m', algorithm: 'HS256' })
 
     // Write audit log so we can detect consumption / replay
     await prisma.auditLog.create({

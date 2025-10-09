@@ -1,11 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
 import { verifyJwt } from '@/lib/auth'
+import { rememberRequest } from '@/lib/idempotency'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
+
+    const idemKey = (req.headers['idempotency-key'] ??
+                     (req.headers as any)['Idempotency-Key']) as string | undefined
+    if (idemKey) {
+      const idem = rememberRequest(idemKey, 'employee/submit-to-swift', req.body)
+      if (idem.hit) return res.status(200).json(idem.hit.responseJson)
+    }
+
     const sessionToken = req.cookies.session
     if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' })
 
@@ -16,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!actionToken || !paymentId) return res.status(400).json({ error: 'Missing required fields' })
 
     // Verify action token (must be issued for actions)
-    const tokenPayload = verifyJwt(actionToken)
+    const tokenPayload = verifyJwt<any>(actionToken)
     if (!tokenPayload || tokenPayload.aud !== 'action-token') {
       return res.status(403).json({ error: 'Invalid action token' })
     }
@@ -58,6 +67,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: 'Action token already used' })
     }
 
+const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
+    if (!payment) return res.status(404).json({ error: 'Payment not found' })
+    if (payment.status !== 'VERIFIED') {
+      return res.status(400).json({ error: 'Payment not ready for SWIFT' })
+    }
+
     // mark as consumed (create audit log)
     await prisma.auditLog.create({
       data: {
@@ -74,9 +89,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // - Validate payment exists
     // - Validate payment status = VERIFIED
     // - Sign / queue / idempotency etc
-    const payment = await prisma.payment.findUnique({ where: { id: paymentId }})
-    if (!payment) return res.status(404).json({ error: 'Payment not found' })
-    if (payment.status !== 'VERIFIED') return res.status(400).json({ error: 'Payment not ready for SWIFT' })
 
     // - Simulate adapter: set submittedToSwift timestamp and status
     await prisma.payment.update({
@@ -99,7 +111,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
-    return res.status(200).json({ ok: true, message: 'Payment queued for SWIFT' })
+    // success payload
+    const payload = { ok: true, message: 'Payment queued for SWIFT' }
+
+    // write idempotent cache (if key present)
+    if (idemKey) rememberRequest(idemKey, 'employee/submit-to-swift', req.body).write(payload)
+
+    return res.status(200).json(payload)
   } catch (err) {
     console.error('submit-to-swift error', err)
     return res.status(500).json({ error: 'Internal server error' })

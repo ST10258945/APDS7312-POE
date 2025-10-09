@@ -12,7 +12,10 @@ export function issueSessionCookie(
   const expiresIn = opts?.expiresIn ?? '30m'
   const maxAge = opts?.maxAgeSeconds ?? 60 * 30 // default 30 min
 
-  const token = signJwt(payload)
+  const token = signJwt(
+    { iss: 'bank-portal', aud: 'app', ...payload },
+    { expiresIn, algorithm: 'HS256' }
+  )
 
   // Defer require to avoid ESM typing friction
   const { serialize } = require('cookie') as typeof import('cookie')

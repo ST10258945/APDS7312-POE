@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
-import jwt from 'jsonwebtoken'
 import { verifyJwt } from '@/lib/auth'
+import { rememberRequest } from '@/lib/idempotency'
 
 import {
   validateAmount,
@@ -41,6 +41,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Not authenticated' })
     }
     const customerId = session.sub
+
+    // Verify JWT/session (already done)
+    const idemKey = req.headers['idempotency-key'] as string | undefined
+    if (idemKey) {
+      const idem = rememberRequest(idemKey, 'payments/create', req.body)
+      if (idem.hit) return res.status(200).json(idem.hit.responseJson)
+    }
 
     // Extract payment data from request body
     const {
@@ -139,6 +146,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
+    const responsePayload = {
+      message: 'Payment created successfully and awaiting verification',
+      payment: {
+        id: payment.id,
+        transactionId: payment.transactionId,
+        amount: payment.amount,
+        currency: payment.currency,
+        provider: payment.provider,
+        recipientName: payment.recipientName,
+        recipientAccount: payment.recipientAccount,
+        swiftCode: payment.swiftCode,
+        paymentReference: payment.paymentReference,
+        status: payment.status,
+        createdAt: payment.createdAt,
+        customer: {
+          fullName: payment.customer.fullName,
+          username: payment.customer.username
+        }
+      }
+    }
+
     // Log payment creation for audit trail
     await prisma.auditLog.create({
       data: {
@@ -158,26 +186,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
-    return res.status(201).json({
-      message: 'Payment created successfully and awaiting verification',
-      payment: {
-        id: payment.id,
-        transactionId: payment.transactionId,
-        amount: payment.amount,
-        currency: payment.currency,
-        provider: payment.provider,
-        recipientName: payment.recipientName,
-        recipientAccount: payment.recipientAccount,
-        swiftCode: payment.swiftCode,
-        paymentReference: payment.paymentReference,
-        status: payment.status,
-        createdAt: payment.createdAt,
-        customer: {
-          fullName: payment.customer.fullName,
-          username: payment.customer.username
-        }
-      }
-    })
+    if (idemKey) rememberRequest(idemKey, 'payments/create', req.body).write(responsePayload)
+return res.status(201).json(responsePayload)
 
   } catch (error) {
     console.error('Payment creation error:', error)
