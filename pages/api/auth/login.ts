@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '../../../lib/db'
-import { verifyPassword, signJwt } from '../../../lib/auth'
+import { issueSessionCookie } from '@/lib/session'
+import { verifyPassword } from '../../../lib/auth'
 import { validateEmail, validatePassword, validateFields, containsInjectionPatterns } from '../../../lib/validation'
 
 /**
@@ -18,9 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Check for missing fields
     if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Missing required fields', 
-        details: 'Email and password are required' 
+      return res.status(400).json({
+        error: 'Missing required fields',
+        details: 'Email and password are required'
       })
     }
 
@@ -45,9 +46,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const validation = validateFields({ email, password }, validationSchema)
 
     if (!validation.isValid) {
-      return res.status(400).json({ 
-        error: 'Invalid input format', 
-        details: validation.errors 
+      return res.status(400).json({
+        error: 'Invalid input format',
+        details: validation.errors
       })
     }
 
@@ -56,8 +57,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const sanitizedPassword = validation.sanitized.password
 
     // Find user by email (using sanitized input)
-    const user = await prisma.user.findUnique({ 
-      where: { email: sanitizedEmail } 
+    const user = await prisma.user.findUnique({
+      where: { email: sanitizedEmail }
     })
 
     if (!user) {
@@ -70,15 +71,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
-    // Generate JWT token
-    const token = signJwt({ 
-      sub: user.id, 
+    // Generate + set cookie (rotation happens by calling this)
+    issueSessionCookie(res, {
+      sub: user.id,
       email: sanitizedEmail,
       type: 'user'
+    }, {
+      expiresIn: '30m',
+      maxAgeSeconds: 60 * 30
     })
 
-    return res.status(200).json({ 
-      token,
+    const isProd = process.env.NODE_ENV === 'production'
+
+    // Do NOT return token in body
+    return res.status(200).json({
       user: {
         id: user.id,
         email: user.email

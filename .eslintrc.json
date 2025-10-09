@@ -1,0 +1,17 @@
+{
+  "rules": {
+    "no-restricted-properties": [
+      "error",
+      {
+        "object": "prisma",
+        "property": "$queryRawUnsafe",
+        "message": "Use $queryRaw with parameters instead of $queryRawUnsafe."
+      },
+      {
+        "object": "prisma",
+        "property": "$executeRawUnsafe",
+        "message": "Use $executeRaw with parameters instead of $executeRawUnsafe."
+      }
+    ]
+  }
+}
