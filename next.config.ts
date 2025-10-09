@@ -1,8 +1,12 @@
 import type { NextConfig } from "next";
 
-const csp = [
+const isProd = process.env.NODE_ENV === "production";
+
+const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",      // replace with nonce setup later if you want
+  // In dev, DO NOT upgrade to https or you’ll break localhost.
+  // In prod, we’ll add upgrade-insecure-requests below.
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
@@ -10,8 +14,11 @@ const csp = [
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",
-  "upgrade-insecure-requests",
-].join("; ");
+];
+
+if (isProd) cspDirectives.push("upgrade-insecure-requests");
+
+const csp = cspDirectives.join("; ");
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -19,7 +26,10 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          // Only send HSTS in prod (it breaks localhost)
+          ...(isProd
+          ? [{ key: "Strict-Transport-Security", value: "max-age=15552000; includeSubDomains" }]
+          : []),
           { key: "Content-Security-Policy", value: csp },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
