@@ -15,3 +15,10 @@ export const prisma =
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+
+// Runtime guardrails (dev-time safety)
+const die = (name: string) => () => {
+  throw new Error(`${name} is disabled. Use parameterized Prisma APIs ($queryRaw / $executeRaw) instead.`)
+}
+;(prisma as any).$queryRawUnsafe = die('$queryRawUnsafe')
+;(prisma as any).$executeRawUnsafe = die('$executeRawUnsafe')

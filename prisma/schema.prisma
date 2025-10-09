@@ -1,6 +1,6 @@
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = "file:./dev.db"
 }
 
 generator client {
@@ -44,6 +44,10 @@ model Employee {
   isActive     Boolean  @default(true) // Account status
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  failedLoginAttempts Int @default(0)
+  lastFailedLogin     DateTime?
+  lockedUntil         DateTime?
   
   // Relations
   verifiedPayments Payment[] @relation("PaymentVerifier")
@@ -110,6 +114,10 @@ model AuditLog {
   userAgent   String?  // User agent string
   metadata    String?  // Additional metadata (JSON)
   timestamp   DateTime @default(now())
+
+  //tamper-evident chain
+  prevHash    String?
+  hash        String @unique
   
   @@map("audit_logs")
 }
