@@ -46,6 +46,30 @@ export function middleware(req: NextRequest) {
   res.headers.set('X-Content-Type-Options', 'nosniff')
   res.headers.set('Referrer-Policy', 'no-referrer')
   res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+  
+  // CSP (tighten/relax if you use CDNs or inline scripts)
+res.headers.set(
+  'Content-Security-Policy',
+  [
+    "default-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "script-src 'self'",            // if you have inline scripts, switch to nonce-based CSP
+    "style-src 'self' 'unsafe-inline'", // keep if you rely on inline styles / Tailwind style tags
+    "img-src 'self' data:",
+    "connect-src 'self'",
+    "font-src 'self' data:",
+    "frame-src 'none'",
+    "manifest-src 'self'"
+  ].join('; ')
+)
+
+// HSTS (only in prod, and only when you’re actually serving HTTPS)
+if (process.env.NODE_ENV === 'production') {
+  res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+}
   return res
 }
 

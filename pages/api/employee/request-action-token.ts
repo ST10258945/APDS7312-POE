@@ -1,17 +1,30 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
 import { verifyJwt, signJwt } from '@/lib/auth'
+import { rateLimit } from '@/lib/rateLimit'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
+    // ---- per-route rate limit (token issuance) ----
+    const ipForRate = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+      || req.socket.remoteAddress || 'unknown';
+    if (!rateLimit(`emp-token-ip:${ipForRate}`)) {
+      return res.status(429).json({ error: 'Too many requests from this IP' })
+    }
+
     // Expect session cookie - server-side verifyJwt helper reads cookie/session
     const sessionToken = req.cookies.session
     if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' })
 
     const session = verifyJwt(sessionToken)
     if (!session || session.type !== 'employee') return res.status(403).json({ error: 'Forbidden - staff only' })
+
+    // ---- per-employee throttle (session-scoped) ----
+    if (!rateLimit(`emp-token-user:${session.sub}`)) {
+      return res.status(429).json({ error: 'Too many token requests, slow down' })
+    }
 
     // Required body: action and optional context
     const { action, context } = req.body || {}

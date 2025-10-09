@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '../../../lib/db';
 import bcrypt from 'bcryptjs';
 import { issueSessionCookie } from '@/lib/session'
+import { rateLimit } from '@/lib/rateLimit'
 import { validateEmployeeId, validatePassword, /*validateIpAddress*/ } from '../../../lib/validation';
 
 // Best effort IP extractor works locally and behind proxies / CDNs
@@ -32,6 +33,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // ---- per-route rate limit (login) ----
+    const ipForRate = getClientIp(req);
+    if (!rateLimit(`emp-login:${ipForRate}`)) {
+      return res.status(429).json({ error: 'Too many attempts, try again shortly' });
+    }
     const { employeeId, password } = req.body;
 
 
