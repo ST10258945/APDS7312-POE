@@ -1,6 +1,6 @@
 type Key = string
 const buckets = new Map<Key, { tokens: number; ts: number }>()
-const CAPACITY = 30        // requests
+const CAPACITY = 3     // requests
 const WINDOW_MS = 60_000   // per minute
 
 export function rateLimit(key: Key) {

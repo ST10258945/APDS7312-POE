@@ -9,13 +9,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // must be logged-in employee (session cookie)
     const sessionToken = req.cookies.session
     const session = sessionToken ? verifyJwt<any>(sessionToken) : null
+    console.log('Session verification debug:', {
+      hasSessionToken: !!sessionToken,
+      sessionType: session?.type,
+      sessionSub: session?.sub,
+      sessionEmployeeId: session?.employeeId
+    })
     if (!session || session.type !== 'employee') return res.status(401).json({ error: 'Not authenticated' })
 
     const { actionToken, paymentId } = req.body || {}
     if (!actionToken || !paymentId) return res.status(400).json({ error: 'Missing required fields' })
 
     // action token must be issued for actions
-    const action = verifyJwt<any>(actionToken)
+    const action = verifyJwt<any>(actionToken, { aud: 'action-token', iss: 'bank-portal' })
+    console.log('Action token verification debug:', {
+      actionToken: actionToken?.slice(0, 20) + '...',
+      action: action,
+      hasAction: !!action,
+      audience: action?.aud,
+      expectedAudience: 'action-token'
+    })
     if (!action || action.aud !== 'action-token') return res.status(403).json({ error: 'Invalid action token' })
     if (String(action.sub) !== String(session.sub)) return res.status(403).json({ error: 'Action token not for this user' })
     if (action.action !== 'VERIFY_PAYMENT') return res.status(403).json({ error: 'Action token not valid for this operation' })

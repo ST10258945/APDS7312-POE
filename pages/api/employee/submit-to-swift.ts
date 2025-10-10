@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!actionToken || !paymentId) return res.status(400).json({ error: 'Missing required fields' })
 
     // Verify action token (must be issued for actions)
-    const tokenPayload = verifyJwt<any>(actionToken)
+    const tokenPayload = verifyJwt<any>(actionToken, { aud: 'action-token', iss: 'bank-portal' })
     if (!tokenPayload || tokenPayload.aud !== 'action-token') {
       return res.status(403).json({ error: 'Invalid action token' })
     }
