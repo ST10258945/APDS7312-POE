@@ -30,7 +30,42 @@
       ]
     },
     {
-      "name": "2️⃣ Customer Login SUCCESS",
+      "name": "2️⃣ Register Test Customer",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/customer/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"{{testFullName}}\",\n  \"idNumber\": \"{{testIdNumber}}\",\n  \"accountNumber\": \"{{testAccountNumber}}\",\n  \"username\": \"{{testUsername}}\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('✅ Customer registered successfully', () => {",
+              "  if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    pm.expect(response).to.have.property('customer');",
+              "    console.log('👤 Customer registered:', response.customer.username);",
+              "  } else if (pm.response.code === 409) {",
+              "    console.log('👤 Customer already exists - proceeding');",
+              "  } else {",
+              "    pm.expect.fail('Unexpected response: ' + pm.response.code);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3️⃣ Customer Login SUCCESS",
       "request": {
         "method": "POST",
         "header": [
@@ -40,7 +75,7 @@
         "url": "{{baseUrl}}/api/customer/login",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"username\\\": \\\"{{testUsername}}\\\",\\n  \\\"password\\\": \\\"{{testPassword}}\\\"\\n}"
+          "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"password\": \"{{testPassword}}\"\n}"
         }
       },
       "event": [
@@ -70,7 +105,7 @@
         "url": "{{baseUrl}}/api/customer/login",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"username\\\": \\\"{{testUsername}}\\\",\\n  \\\"password\\\": \\\"WrongPassword123!\\\"\\n}"
+          "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"password\": \"WrongPassword123!\"\n}"
         }
       },
       "event": [
@@ -100,7 +135,7 @@
         "url": "{{baseUrl}}/api/employee/login",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"employeeId\\\": \\\"{{testEmployeeId}}\\\",\\n  \\\"password\\\": \\\"{{testEmployeePassword}}\\\"\\n}"
+          "raw": "{\n  \"employeeId\": \"{{testEmployeeId}}\",\n  \"password\": \"{{testEmployeePassword}}\"\n}"
         }
       },
       "event": [
@@ -130,7 +165,7 @@
         "url": "{{baseUrl}}/api/employee/login",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"employeeId\\\": \\\"{{testEmployeeId}}\\\",\\n  \\\"password\\\": \\\"WrongPassword123!\\\"\\n}"
+          "raw": "{\n  \"employeeId\": \"{{testEmployeeId}}\",\n  \"password\": \"WrongPassword123!\"\n}"
         }
       },
       "event": [
@@ -160,7 +195,7 @@
         "url": "{{baseUrl}}/api/customer/login",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"username\\\": \\\"{{testUsername}}\\\",\\n  \\\"password\\\": \\\"{{testPassword}}\\\"\\n}"
+          "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"password\": \"{{testPassword}}\"\n}"
         }
       },
       "event": [
@@ -194,7 +229,7 @@
         "url": "{{baseUrl}}/api/payments/create",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"amount\\\": \\\"250.00\\\",\\n  \\\"currency\\\": \\\"USD\\\",\\n  \\\"provider\\\": \\\"SWIFT\\\",\\n  \\\"recipientName\\\": \\\"Advanced Test Corp\\\",\\n  \\\"recipientAccount\\\": \\\"987654321098\\\",\\n  \\\"swiftCode\\\": \\\"ABCDUS33XXX\\\",\\n  \\\"paymentReference\\\": \\\"Advanced-Test-001\\\"\\n}"
+          "raw": "{\n  \"amount\": \"250.00\",\n  \"currency\": \"USD\",\n  \"provider\": \"SWIFT\",\n  \"recipientName\": \"Advanced Test Corp\",\n  \"recipientAccount\": \"987654321098\",\n  \"swiftCode\": \"ABCDUS33XXX\",\n  \"paymentReference\": \"Advanced-Test-001\"\n}"
         }
       },
       "event": [
@@ -227,7 +262,7 @@
         "url": "{{baseUrl}}/api/payments/create",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"amount\\\": \\\"250.00\\\",\\n  \\\"currency\\\": \\\"USD\\\",\\n  \\\"provider\\\": \\\"SWIFT\\\",\\n  \\\"recipientName\\\": \\\"Advanced Test Corp\\\",\\n  \\\"recipientAccount\\\": \\\"987654321098\\\",\\n  \\\"swiftCode\\\": \\\"ABCDUS33XXX\\\",\\n  \\\"paymentReference\\\": \\\"Advanced-Test-001\\\"\\n}"
+          "raw": "{\n  \"amount\": \"250.00\",\n  \"currency\": \"USD\",\n  \"provider\": \"SWIFT\",\n  \"recipientName\": \"Advanced Test Corp\",\n  \"recipientAccount\": \"987654321098\",\n  \"swiftCode\": \"ABCDUS33XXX\",\n  \"paymentReference\": \"Advanced-Test-001\"\n}"
         }
       },
       "event": [
@@ -258,7 +293,7 @@
         "url": "{{baseUrl}}/api/payments/create",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"amount\\\": \\\"100.00\\\",\\n  \\\"currency\\\": \\\"USD\\\",\\n  \\\"provider\\\": \\\"SWIFT\\\",\\n  \\\"recipientName\\\": \\\"Test Corp\\\",\\n  \\\"recipientAccount\\\": \\\"987654321098\\\",\\n  \\\"swiftCode\\\": \\\"INVALID123\\\",\\n  \\\"paymentReference\\\": \\\"Invalid-SWIFT-Test\\\"\\n}"
+          "raw": "{\n  \"amount\": \"100.00\",\n  \"currency\": \"USD\",\n  \"provider\": \"SWIFT\",\n  \"recipientName\": \"Test Corp\",\n  \"recipientAccount\": \"987654321098\",\n  \"swiftCode\": \"INVALID123\",\n  \"paymentReference\": \"Invalid-SWIFT-Test\"\n}"
         }
       },
       "event": [
@@ -288,7 +323,7 @@
         "url": "{{baseUrl}}/api/employee/request-action-token",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"action\\\": \\\"VERIFY_PAYMENT\\\",\\n  \\\"context\\\": {\\n    \\\"paymentId\\\": \\\"{{testPaymentId}}\\\"\\n  }\\n}"
+          "raw": "{\n  \"action\": \"VERIFY_PAYMENT\",\n  \"context\": {\n    \"paymentId\": \"{{testPaymentId}}\"\n  }\n}"
         }
       },
       "event": [
@@ -319,7 +354,7 @@
         "url": "{{baseUrl}}/api/payments/verify",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"actionToken\\\": \\\"{{verifyActionToken}}\\\",\\n  \\\"paymentId\\\": \\\"{{testPaymentId}}\\\"\\n}"
+          "raw": "{\n  \"actionToken\": \"{{verifyActionToken}}\",\n  \"paymentId\": \"{{testPaymentId}}\"\n}"
         }
       },
       "event": [
@@ -349,7 +384,7 @@
         "url": "{{baseUrl}}/api/payments/verify",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"actionToken\\\": \\\"{{verifyActionToken}}\\\",\\n  \\\"paymentId\\\": \\\"{{testPaymentId}}\\\"\\n}"
+          "raw": "{\n  \"actionToken\": \"{{verifyActionToken}}\",\n  \"paymentId\": \"{{testPaymentId}}\"\n}"
         }
       },
       "event": [
@@ -379,7 +414,7 @@
         "url": "{{baseUrl}}/api/employee/request-action-token",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"action\\\": \\\"SUBMIT_TO_SWIFT\\\",\\n  \\\"context\\\": {\\n    \\\"paymentId\\\": \\\"{{testPaymentId}}\\\"\\n  }\\n}"
+          "raw": "{\n  \"action\": \"SUBMIT_TO_SWIFT\",\n  \"context\": {\n    \"paymentId\": \"{{testPaymentId}}\"\n  }\n}"
         }
       },
       "event": [
@@ -411,7 +446,7 @@
         "url": "{{baseUrl}}/api/employee/submit-to-swift",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"actionToken\\\": \\\"{{submitActionToken}}\\\",\\n  \\\"paymentId\\\": \\\"{{testPaymentId}}\\\"\\n}"
+          "raw": "{\n  \"actionToken\": \"{{submitActionToken}}\",\n  \"paymentId\": \"{{testPaymentId}}\"\n}"
         }
       },
       "event": [
@@ -442,7 +477,7 @@
         "url": "{{baseUrl}}/api/employee/submit-to-swift",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"actionToken\\\": \\\"{{submitActionToken}}\\\",\\n  \\\"paymentId\\\": \\\"{{testPaymentId}}\\\"\\n}"
+          "raw": "{\n  \"actionToken\": \"{{submitActionToken}}\",\n  \"paymentId\": \"{{testPaymentId}}\"\n}"
         }
       },
       "event": [
@@ -470,7 +505,7 @@
         "url": "{{baseUrl}}/api/customer/login",
         "body": {
           "mode": "raw",
-          "raw": "{\\n  \\\"username\\\": \\\"{{testUsername}}\\\",\\n  \\\"password\\\": \\\"{{testPassword}}\\\"\\n}"
+          "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"password\": \"{{testPassword}}\"\n}"
         }
       },
       "event": [
