@@ -4,8 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:https": "local-ssl-proxy --source 3443 --target 3000 --cert certs/localhost-cert.pem --key certs/localhost-key.pem",
     "build": "next build",
     "start": "next start -p 3000",
+    "start:https": "NODE_ENV=production node server.js",
+    "generate-certs": "powershell -ExecutionPolicy Bypass -File generate-ssl.ps1",
     "lint": "eslint .",
     "postinstall": "prisma generate",
     "migrate": "prisma migrate dev",
@@ -31,6 +34,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
+    "local-ssl-proxy": "^2.0.5",
     "prisma": "^6.16.3",
     "tailwindcss": "^4",
     "typescript": "^5"
