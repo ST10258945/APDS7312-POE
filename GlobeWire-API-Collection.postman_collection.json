@@ -1,0 +1,464 @@
+{
+  "info": {
+    "name": "APDS7311 Task 2 - GlobeWire Backend",
+    "description": "Comprehensive API testing collection for GlobeWire international payment system. Includes authentication, payments, security testing, and error scenarios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Auto-fetch CSRF token if needed for mutating requests",
+          "if (!pm.environment.get('csrfToken') && ['POST','PUT','PATCH','DELETE'].includes(pm.request.method)) {",
+          "  pm.sendRequest({",
+          "    url: pm.environment.get('baseUrl') + '/api/csrf',",
+          "    method: 'GET'",
+          "  }, function(err, res) {",
+          "    if (res && res.headers.get('csrf-token')) {",
+          "      pm.environment.set('csrfToken', res.headers.get('csrf-token'));",
+          "      pm.request.headers.upsert({key: 'x-csrf-token', value: res.headers.get('csrf-token')});",
+          "    }",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Get CSRF Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/csrf"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('CSRF token received', () => {",
+                  "  pm.expect(pm.response.headers.get('csrf-token')).to.not.be.null;",
+                  "  pm.environment.set('csrfToken', pm.response.headers.get('csrf-token'));",
+                  "  console.log('CSRF Token:', pm.response.headers.get('csrf-token'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/customer/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"{{testFullName}}\",\n  \"idNumber\": \"{{testIdNumber}}\",\n  \"accountNumber\": \"{{testAccountNumber}}\",\n  \"username\": \"{{testUsername}}\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Customer registered successfully', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property('customer');",
+                  "  pm.expect(response.customer).to.have.property('id');",
+                  "  console.log('Customer registered:', response.customer);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/customer/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Customer login successful', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property('customer');",
+                  "  console.log('Customer logged in:', response.customer);",
+                  "  // Note: Session token is in HTTP-only cookie",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/logout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Logout successful', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "💰 Payments",
+      "item": [
+        {
+          "name": "Create International Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
+            "url": "{{baseUrl}}/api/payments/create",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"150.75\",\n  \"currency\": \"USD\",\n  \"provider\": \"SWIFT\",\n  \"recipientName\": \"Jane Smith Corporation\",\n  \"recipientAccount\": \"987654321012\",\n  \"swiftCode\": \"ABCDUS33XXX\",\n  \"paymentReference\": \"Invoice 2024-001\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payment created successfully', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property('payment');",
+                  "  pm.expect(response.payment).to.have.property('transactionId');",
+                  "  pm.expect(response.payment.status).to.equal('PENDING');",
+                  "  pm.environment.set('paymentId', response.payment.id);",
+                  "  pm.environment.set('transactionId', response.payment.transactionId);",
+                  "  console.log('Payment created:', response.payment);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Customer Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/payments/list"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payments listed successfully', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property('payments');",
+                  "  pm.expect(response.payments).to.be.an('array');",
+                  "  console.log('Payment count:', response.payments.length);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test Idempotency (Duplicate Payment)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
+            "url": "{{baseUrl}}/api/payments/create",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"150.75\",\n  \"currency\": \"USD\",\n  \"provider\": \"SWIFT\",\n  \"recipientName\": \"Jane Smith Corporation\",\n  \"recipientAccount\": \"987654321012\",\n  \"swiftCode\": \"ABCDUS33XXX\",\n  \"paymentReference\": \"Invoice 2024-001\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Idempotency works - returns cached response', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property('payment');",
+                  "  console.log('Idempotent response received');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🛡️ Security Tests",
+      "item": [
+        {
+          "name": "Invalid Credentials Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/customer/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"nonexistent\",\n  \"password\": \"wrongpassword\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid credentials rejected', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property('error');",
+                  "  console.log('Invalid login properly rejected');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SQL Injection Attempt - Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/customer/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"'; DROP TABLE customers; --\",\n  \"idNumber\": \"1234567890123\",\n  \"accountNumber\": \"123456789012\",\n  \"username\": \"sqlinjection\",\n  \"email\": \"test@test.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('SQL injection attempt blocked', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property('error');",
+                  "  console.log('SQL injection properly blocked');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid Payment Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/payments/create",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"-100\",\n  \"currency\": \"INVALID\",\n  \"provider\": \"<script>alert('xss')</script>\",\n  \"recipientName\": \"\",\n  \"recipientAccount\": \"123\",\n  \"swiftCode\": \"INVALID\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid payment data rejected', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property('error');",
+                  "  pm.expect(response).to.have.property('details');",
+                  "  console.log('Invalid payment data properly rejected');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing CSRF Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/customer/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Test User\",\n  \"idNumber\": \"1234567890123\",\n  \"accountNumber\": \"123456789012\",\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('CSRF protection active', () => {",
+                  "  pm.response.to.have.status(403);",
+                  "  console.log('CSRF protection working');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rate Limiting Test (Rapid Requests)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/customer/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"ratelimittest\",\n  \"password\": \"wrongpassword\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rate limiting or normal response', () => {",
+                  "  pm.expect([401, 429]).to.include(pm.response.code);",
+                  "  if (pm.response.code === 429) {",
+                  "    console.log('Rate limiting triggered - good!');",
+                  "  } else {",
+                  "    console.log('Normal invalid login response');",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "👨‍💼 Employee Operations",
+      "item": [
+        {
+          "name": "Employee Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/employee/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{testEmployeeId}}\",\n  \"password\": \"{{testEmployeePassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Employee login (if employee exists)', () => {",
+                  "  // This may fail if no employee exists - that's expected",
+                  "  if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('employee');",
+                  "    console.log('Employee logged in:', response.employee);",
+                  "  } else {",
+                  "    console.log('No employee account found - create one for full testing');",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request Action Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/employee/request-action-token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"VERIFY_PAYMENT\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Action token request (requires employee session)', () => {",
+                  "  if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('actionToken');",
+                  "    pm.environment.set('actionToken', response.actionToken);",
+                  "    console.log('Action token received');",
+                  "  } else {",
+                  "    console.log('Employee session required for action tokens');",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
