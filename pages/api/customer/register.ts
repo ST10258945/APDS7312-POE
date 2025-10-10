@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
+import { appendAuditLog } from '@/lib/audit'
 import { 
   validateEmail, 
   validatePassword, 
@@ -130,18 +131,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
-    // Log successful registration (for security audit)
-    await prisma.auditLog.create({
-      data: {
-        entityType: 'Customer',
-        entityId: customer.id,
-        action: 'REGISTER',
-        ipAddress: req.headers['x-forwarded-for']?.toString() || req.connection.remoteAddress,
-        userAgent: req.headers['user-agent'],
-        metadata: JSON.stringify({ 
-          email: sanitizedData.email,
-          username: sanitizedData.username 
-        })
+    // Log successful registration (for security audit with tamper-evident chain)
+    await appendAuditLog({
+      entityType: 'Customer',
+      entityId: customer.id,
+      action: 'REGISTER',
+      ipAddress: req.headers['x-forwarded-for']?.toString() || req.connection.remoteAddress || null,
+      userAgent: req.headers['user-agent'] || null,
+      metadata: { 
+        email: sanitizedData.email,
+        username: sanitizedData.username 
       }
     })
 
