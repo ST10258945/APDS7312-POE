@@ -16,7 +16,7 @@ A secure international payment processing backend built with Next.js, TypeScript
 
 ### Prerequisites
 - Node.js 18+ 
-- pnpm (recommended) or npm
+- npm (Node Package Manager)
 - Git
 
 ### Installation
@@ -29,7 +29,7 @@ A secure international payment processing backend built with Next.js, TypeScript
 
 2. **Install dependencies**:
    ```bash
-   pnpm install
+   npm install
    ```
 
 3. **Set up environment variables**:
@@ -40,13 +40,13 @@ A secure international payment processing backend built with Next.js, TypeScript
 
 4. **Set up database**:
    ```bash
-   pnpm run migrate
-   pnpm run prisma:generate
+   npm run migrate
+   npm run prisma:generate
    ```
 
 5. **Start the development server**:
    ```bash
-   pnpm run dev
+   npm run dev
    ```
 
 6. **Access the application**:
@@ -130,27 +130,27 @@ Key entities:
 - **Payment**: International payment transactions
 - **AuditLog**: Tamper-evident audit trail
 
-Run `pnpm run prisma:studio` to explore the database schema visually.
+Run `npm run prisma:studio` to explore the database schema visually.
 
 ## 🛠️ Development Scripts
 
 ```bash
 # Development server
-pnpm run dev
+npm run dev
 
 # Build for production
-pnpm run build
+npm run build
 
 # Start production server
-pnpm run start
+npm run start
 
 # Database operations
-pnpm run migrate          # Run database migrations
-pnpm run prisma:generate  # Generate Prisma client
-pnpm run prisma:studio    # Open database browser
+npm run migrate          # Run database migrations
+npm run prisma:generate  # Generate Prisma client
+npm run prisma:studio    # Open database browser
 
 # Code quality
-pnpm run lint             # ESLint check
+npm run lint             # ESLint check
 ```
 
 ## 🔧 Environment Variables
