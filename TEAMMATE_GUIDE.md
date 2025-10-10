@@ -66,9 +66,10 @@ Follow this exact sequence as tokens depend on each other:
 4. **Employee Login** - Gets employee JWT token
 
 #### B. Payment Operations
-4. **Create Payment (Customer)** - Customer creates payment
-5. **List Payments (Employee)** - Employee views all payments
-6. **Verify Payment (Employee)** - Employee verifies payment
+4. **Create Payment (Customer)** - Customer creates payment (requires customer login)
+5. **Employee Login** - Login as employee to access payment management
+6. **List Payments (Employee)** - Employee views all payments (requires employee login)
+7. **Verify Payment (Employee)** - Employee verifies payment
 
 #### C. Security & Error Tests
 7. **Invalid Payment** - Tests validation
@@ -149,6 +150,12 @@ Show key files in VS Code:
   - CSRF validation passed! (This is progress from 403)
   - Check server console for detailed error messages
   - Usually indicates missing API endpoint or database issue
+- **Logout Returns No Data**:
+  - Status 204 = Success with no content (this is correct!)
+  - Logout successfully clears session cookie
+- **401 on List Payments**:
+  - "List Payments" requires EMPLOYEE login, not customer
+  - Make sure you've logged in as employee before accessing
 
 ### Database Issues
 - **MongoDB Connection**: Server will show connection status in console
