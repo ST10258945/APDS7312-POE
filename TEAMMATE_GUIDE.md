@@ -59,10 +59,11 @@ You should see: "GlobeWire Payment API is running!"
 ### Test Order (Important!)
 Follow this exact sequence as tokens depend on each other:
 
-#### A. Authentication Tests
-1. **Customer Registration** - Creates new customer account
-2. **Customer Login** - Gets customer JWT token
-3. **Employee Login** - Gets employee JWT token
+#### A. CSRF & Authentication Tests
+1. **Get CSRF Token** - ⚠️ **MANDATORY FIRST STEP** - Sets cookie and token
+2. **Customer Registration** - Creates new customer account
+3. **Customer Login** - Gets customer JWT token
+4. **Employee Login** - Gets employee JWT token
 
 #### B. Payment Operations
 4. **Create Payment (Customer)** - Customer creates payment
@@ -133,15 +134,21 @@ Show key files in VS Code:
 - Restart with `npm run dev`
 
 ### Postman Errors
-- **CSRF Token Missing**: 
-  - Check if environment is selected
-  - Re-run any request to get fresh token
+- **CSRF Token Missing/403 Forbidden**: 
+  - **CRITICAL**: Run "Get CSRF Token" request FIRST before any POST requests
+  - Verify environment is selected ("GlobeWire Local" in top right)
+  - Check that `csrfToken` variable is populated in environment
+  - Ensure Postman cookie management is enabled (Settings > General > Cookie Jar)
 - **401 Unauthorized**: 
   - Check if customer/employee login succeeded
   - Verify JWT tokens in environment variables
 - **Connection Refused**: 
-  - Ensure backend server is running
+  - Ensure backend server is running (check external PowerShell window)
   - Verify URL is `http://localhost:3000`
+- **500 Internal Server Error**:
+  - CSRF validation passed! (This is progress from 403)
+  - Check server console for detailed error messages
+  - Usually indicates missing API endpoint or database issue
 
 ### Database Issues
 - **MongoDB Connection**: Server will show connection status in console
