@@ -28,6 +28,13 @@ npm run dev
 ```
 **Expected output:** Server running on port 3000
 
+### Create Default Employee Account
+```bash
+npx prisma db seed
+```
+**Expected output:** Created default employee: Admin Employee (EMP001)
+**Note:** This creates the employee account needed for testing employee functions
+
 ### Verify Server is Running
 Open browser to: `http://localhost:3000`
 You should see: "GlobeWire Payment API is running!"
@@ -63,13 +70,14 @@ Follow this exact sequence as tokens depend on each other:
 1. **Get CSRF Token** - ⚠️ **MANDATORY FIRST STEP** - Sets cookie and token
 2. **Customer Registration** - Creates new customer account
 3. **Customer Login** - Gets customer JWT token
-4. **Employee Login** - Gets employee JWT token
+4. **Employee Login** - Use credentials: `EMP001` / `EmpSecurePass123!`
 
 #### B. Payment Operations
 4. **Create Payment (Customer)** - Customer creates payment (requires customer login)
-5. **Employee Login** - Login as employee to access payment management
-6. **List Payments (Employee)** - Employee views all payments (requires employee login)
-7. **Verify Payment (Employee)** - Employee verifies payment
+5. **Test Idempotency (Duplicate Payment)** - Same payment with same idempotency key
+6. **Employee Login** - Login as employee to access payment management
+7. **List Payments (Employee)** - Employee views all payments (requires employee login)
+8. **Verify Payment (Employee)** - Employee verifies payment
 
 #### C. Security & Error Tests
 7. **Invalid Payment** - Tests validation
