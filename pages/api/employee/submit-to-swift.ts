@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
 import { verifyJwt } from '@/lib/auth'
 import { rememberRequest } from '@/lib/idempotency'
+import { appendAuditLog } from '@/lib/audit'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -73,16 +74,14 @@ const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
       return res.status(400).json({ error: 'Payment not ready for SWIFT' })
     }
 
-    // mark as consumed (create audit log)
-    await prisma.auditLog.create({
-      data: {
-        entityType: 'Employee',
-        entityId: session.sub,
-        action: 'ACTION_TOKEN_CONSUMED',
-        ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
-        userAgent: req.headers['user-agent'],
-        metadata: JSON.stringify({ jti, paymentId })
-      }
+    // mark as consumed (create audit log with tamper-evident chain)
+    await appendAuditLog({
+      entityType: 'Employee',
+      entityId: session.sub,
+      action: 'ACTION_TOKEN_CONSUMED',
+      ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+      userAgent: req.headers['user-agent'] || null,
+      metadata: { jti, paymentId }
     })
 
     // Perform the SWIFT submission flow:
@@ -99,16 +98,14 @@ const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
       }
     })
 
-    // Audit
-    await prisma.auditLog.create({
-      data: {
-        entityType: 'Payment',
-        entityId: paymentId,
-        action: 'SUBMITTED_TO_SWIFT',
-        ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
-        userAgent: req.headers['user-agent'],
-        metadata: JSON.stringify({ by: session.sub, jti })
-      }
+    // Audit with tamper-evident chain
+    await appendAuditLog({
+      entityType: 'Payment',
+      entityId: paymentId,
+      action: 'SUBMITTED_TO_SWIFT',
+      ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+      userAgent: req.headers['user-agent'] || null,
+      metadata: { by: session.sub, employeeId: session.employeeId, jti }
     })
 
     // success payload
