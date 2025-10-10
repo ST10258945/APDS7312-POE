@@ -1,24 +1,23 @@
 import type { NextApiResponse } from 'next'
 import { signJwt } from './auth'
+import { serialize } from 'cookie'
+import type { SignOptions } from 'jsonwebtoken'
 
 type JwtPayload = Record<string, any>
 
 export function issueSessionCookie(
   res: NextApiResponse,
   payload: JwtPayload,
-  opts?: { expiresIn?: string; maxAgeSeconds?: number }
+  opts?: { expiresIn?: SignOptions['expiresIn']; maxAgeSeconds?: number } // ← type matches jsonwebtoken
 ) {
   const isProd = process.env.NODE_ENV === 'production'
-  const expiresIn = opts?.expiresIn ?? '30m'
-  const maxAge = opts?.maxAgeSeconds ?? 60 * 30 // default 30 min
+  const expiresIn: SignOptions['expiresIn'] = opts?.expiresIn ?? '30m' // ← string | number per jwt
+  const maxAge = opts?.maxAgeSeconds ?? 60 * 30 // 30 minutes
 
   const token = signJwt(
     { iss: 'bank-portal', aud: 'app', ...payload },
     { expiresIn, algorithm: 'HS256' }
   )
-
-  // Defer require to avoid ESM typing friction
-  const { serialize } = require('cookie') as typeof import('cookie')
 
   res.setHeader(
     'Set-Cookie',
