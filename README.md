@@ -2,7 +2,14 @@
 
 ## 👥 Team
 
-**Group 5** - Advanced Application Development Security
+**APDS7311**  
+**Group 5**  
+**Task 2**  
+
+- **ST10274142** – Teejay Kamwaro
+- **ST10267985** – Kabelo Diutluileng
+- **ST10306640** – Keanu Muller
+- **ST10258945** – Kyle James
 
 A secure international payment processing backend built with Next.js, TypeScript, and comprehensive security hardening measures. This system enables customers to create international payments while providing employees with verification and approval workflows.
 
