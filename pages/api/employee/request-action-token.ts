@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
 import { verifyJwt, signJwt } from '@/lib/auth'
+import { appendAuditLog } from '@/lib/audit'
 import { rateLimit } from '@/lib/rateLimit'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -43,16 +44,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       aud: 'action-token'
     }, { expiresIn: '5m', algorithm: 'HS256' })
 
-    // Write audit log so we can detect consumption / replay
-    await prisma.auditLog.create({
-      data: {
-        entityType: 'Employee',
-        entityId: session.sub,
-        action: 'ACTION_TOKEN_ISSUED',
-        ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
-        userAgent: req.headers['user-agent'],
-        metadata: JSON.stringify({ jti, action, context })
-      }
+    // Write audit log with tamper-evident chain for token tracking
+    await appendAuditLog({
+      entityType: 'Employee',
+      entityId: session.sub,
+      action: 'ACTION_TOKEN_ISSUED',
+      ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+      userAgent: req.headers['user-agent'] || null,
+      metadata: { jti, action, context, employeeId: session.employeeId }
     })
 
     return res.status(200).json({ token })
