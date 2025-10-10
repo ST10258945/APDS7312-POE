@@ -28,8 +28,11 @@ export function middleware(req: NextRequest) {
 
   // 2) Basic rate limit (per IP)
   const ip = getClientIp(req)
-  if (!rateLimit(ip)) {
+  const path = url.pathname
+if (path === '/api/employee/login' || path === '/api/customer/login') {
+  if (!rateLimit(`login:${ip}`)) {
     return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } })
+  }
   }
 
   // 3) CSRF gate

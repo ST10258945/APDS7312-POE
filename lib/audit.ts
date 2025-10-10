@@ -10,32 +10,46 @@ type LogInput = {
   metadata?: any
 }
 
-/** canonicalize and hash a log with prevHash to make a chain */
-function computeLogHash(input: Omit<LogInput, 'metadata'> & { metadata?: string | null; timestampISO: string; prevHash: string | null }) {
+/** canonicalize + sha256(prevHash + entry) so logs are tamper-evident */
+function computeLogHash(input: {
+  entityType: string
+  entityId: string
+  action: string
+  ipAddress: string | null
+  userAgent: string | null
+  metadata: string | null
+  timestampISO: string
+  prevHash: string | null
+}) {
   const canon = JSON.stringify({
     entityType: input.entityType,
     entityId: input.entityId,
     action: input.action,
-    ipAddress: input.ipAddress ?? null,
-    userAgent: input.userAgent ?? null,
-    metadata: input.metadata ?? null,
+    ipAddress: input.ipAddress,
+    userAgent: input.userAgent,
+    metadata: input.metadata,
     timestamp: input.timestampISO,
-    prevHash: input.prevHash ?? null,
+    prevHash: input.prevHash,
   })
   return createHash('sha256').update(canon).digest('hex')
 }
 
-/** Append new audit log entry and chain it to previous hash */
+/** Append a chained audit-log entry (writes prevHash + hash) */
 export async function appendAuditLog(entry: LogInput) {
-  // grab last inserted logs hash (by timestamp desc)
+  // NOTE: If your model uses "createdAt" instead of "timestamp", change the orderBy line accordingly.
   const last = await prisma.auditLog.findFirst({
-    orderBy: { timestamp: 'desc' },
+    orderBy: { timestamp: 'desc' }, // ← change to { createdAt: 'desc' } if your column is createdAt
     select: { hash: true },
   })
 
   const prevHash = last?.hash ?? null
   const timestampISO = new Date().toISOString()
-  const metadataStr = entry.metadata != null ? (typeof entry.metadata === 'string' ? entry.metadata : JSON.stringify(entry.metadata)) : null
+  const metadataStr =
+    entry.metadata != null
+      ? typeof entry.metadata === 'string'
+        ? entry.metadata
+        : JSON.stringify(entry.metadata)
+      : null
 
   const hash = computeLogHash({
     entityType: entry.entityType,
@@ -56,8 +70,8 @@ export async function appendAuditLog(entry: LogInput) {
       ipAddress: entry.ipAddress ?? null,
       userAgent: entry.userAgent ?? null,
       metadata: metadataStr,
-      prevHash,
-      hash,
+      prevHash, // ok if nullable in your schema
+      hash,    
     },
   })
 }
