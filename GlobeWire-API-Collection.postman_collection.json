@@ -4,28 +4,6 @@
     "description": "Comprehensive API testing collection for GlobeWire international payment system. Includes authentication, payments, security testing, and error scenarios.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "exec": [
-          "// Auto-fetch CSRF token if needed for mutating requests",
-          "if (!pm.environment.get('csrfToken') && ['POST','PUT','PATCH','DELETE'].includes(pm.request.method)) {",
-          "  pm.sendRequest({",
-          "    url: pm.environment.get('baseUrl') + '/api/csrf',",
-          "    method: 'GET'",
-          "  }, function(err, res) {",
-          "    if (res && res.json() && res.json().token) {",
-          "      const token = res.json().token;",
-          "      pm.environment.set('csrfToken', token);",
-          "      pm.request.headers.upsert({key: 'x-csrf-token', value: token});",
-          "    }",
-          "  });",
-          "}"
-        ]
-      }
-    }
-  ],
   "item": [
     {
       "name": "🔐 Authentication",
