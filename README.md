@@ -11,6 +11,14 @@
 - **ST10306640** – Keanu Muller
 - **ST10258945** – Kyle James
 
+## 🎥 YouTube Links
+
+**Demo Video:**  
+https://youtu.be/QsTyMCxH0iQ
+
+**Prisma DB Coverage:**  
+https://youtu.be/iGB8hhKpEwk
+
 A secure international payment processing backend built with Next.js, TypeScript, and comprehensive security hardening measures. This system enables customers to create international payments while providing employees with verification and approval workflows.
 
 ## 🏗️ Architecture
