@@ -8,9 +8,10 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
 
   res.setHeader('Set-Cookie', serialize('csrf', token, {
     secure: isProd,
-    sameSite: 'strict',
+    sameSite: isProd ? 'strict' : 'lax', // Allow Postman testing in dev
     path: '/',
     maxAge: 60 * 30, // 30 min
+    httpOnly: false, // Allow reading in client for API testing
   }))
   res.status(200).json({ token })
 }
