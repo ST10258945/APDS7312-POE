@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
 import { verifyJwt } from '@/lib/auth'
+import { appendAuditLog } from '@/lib/audit'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -43,27 +44,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: { status: 'VERIFIED', verifiedAt: new Date() as any }
     })
 
-    // consume token
-    await prisma.auditLog.create({
-      data: {
-        entityType: 'Employee',
-        entityId: session.sub,
-        action: 'ACTION_TOKEN_CONSUMED',
-        ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
-        userAgent: req.headers['user-agent'],
-        metadata: JSON.stringify({ jti, paymentId })
-      }
+    // consume token with tamper-evident audit logging
+    await appendAuditLog({
+      entityType: 'Employee',
+      entityId: session.sub,
+      action: 'ACTION_TOKEN_CONSUMED',
+      ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+      userAgent: req.headers['user-agent'] || null,
+      metadata: { jti, paymentId }
     })
 
-    await prisma.auditLog.create({
-      data: {
-        entityType: 'Payment',
-        entityId: paymentId,
-        action: 'VERIFIED',
-        ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
-        userAgent: req.headers['user-agent'],
-        metadata: JSON.stringify({ by: session.sub })
-      }
+    await appendAuditLog({
+      entityType: 'Payment',
+      entityId: paymentId,
+      action: 'VERIFIED',
+      ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+      userAgent: req.headers['user-agent'] || null,
+      metadata: { by: session.sub, employeeId: session.employeeId }
     })
 
     return res.status(200).json({ ok: true, message: 'Payment verified' })
