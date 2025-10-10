@@ -178,15 +178,32 @@ Show key files in VS Code:
 
 ---
 
-## 6. Quality Checklist
+## 6. POE Requirements Checklist (Task 2: 80 Marks)
 
-Before submitting, verify:
-- [ ] All 9 Postman tests run successfully
-- [ ] Video shows both success and error cases
-- [ ] Audio is clear and understandable
-- [ ] Code walkthrough covers security features
-- [ ] Video length is 10-15 minutes
-- [ ] Demonstrates professional API testing approach
+### 🔐 **Security Requirements:**
+- [ ] **Password Security [10 marks]**: bcrypt hashing + salting ✅
+- [ ] **Input Whitelisting [10 marks]**: RegEx validation for all inputs ✅
+- [ ] **SSL/HTTPS [20 marks]**: ⚠️ **MISSING - See setup-https.md** 
+- [ ] **Attack Protection [30 marks]**: CSRF, rate limiting, security headers ✅
+- [ ] **DevSecOps Pipeline [10 marks]**: ⚠️ Consider CI/CD setup
+
+### 🧪 **Testing Checklist:**
+- [ ] **Customer Registration**: Works with validation ✅
+- [ ] **Customer Login**: JWT authentication ✅
+- [ ] **Employee Login**: Pre-registered accounts ✅
+- [ ] **Payment Creation**: With audit logging ✅
+- [ ] **Idempotency**: Duplicate prevention ✅
+- [ ] **Rate Limiting**: 30 requests/minute on login ✅
+- [ ] **CSRF Protection**: Token validation ✅
+- [ ] **Employee Portal**: List/verify payments ✅
+
+### 📹 **Video Demonstration:**
+- [ ] All API endpoints working
+- [ ] Security features demonstrated
+- [ ] Error handling shown
+- [ ] Code walkthrough included
+- [ ] 10-15 minutes duration
+- [ ] Clear audio and visual quality
 
 ---
 
