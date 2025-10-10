@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
 import { verifyJwt } from '@/lib/auth'
+import { appendAuditLog } from '@/lib/audit'
 import { rememberRequest } from '@/lib/idempotency'
 
 import {
@@ -167,22 +168,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Log payment creation for audit trail
-    await prisma.auditLog.create({
-      data: {
-        entityType: 'Payment',
-        entityId: payment.id,
-        action: 'CREATE',
-        userId: customerId,
-        ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress,
-        userAgent: req.headers['user-agent'],
-        metadata: JSON.stringify({
-          transactionId: payment.transactionId,
-          amount: sanitizedData.amount,
-          currency: sanitizedData.currency,
-          recipientName: sanitizedData.recipientName,
-          swiftCode: sanitizedData.swiftCode
-        })
+    // Log payment creation for audit trail with tamper-evident chain
+    await appendAuditLog({
+      entityType: 'Payment',
+      entityId: payment.id,
+      action: 'CREATE',
+      ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+      userAgent: req.headers['user-agent'] || null,
+      metadata: {
+        transactionId: payment.transactionId,
+        amount: sanitizedData.amount,
+        currency: sanitizedData.currency,
+        recipientName: sanitizedData.recipientName,
+        swiftCode: sanitizedData.swiftCode,
+        customerId: customerId
       }
     })
 
