@@ -1,6 +1,8 @@
 # GlobeWire - International Payment Portal
 
-**APDS7311 Task 2 - Group 5**
+## 👥 Team
+
+**Group 5** - Advanced Application Development Security
 
 A secure international payment processing backend built with Next.js, TypeScript, and comprehensive security hardening measures. This system enables customers to create international payments while providing employees with verification and approval workflows.
 
@@ -171,35 +173,8 @@ Use the provided Postman collection for comprehensive API testing:
 3. Run the collection to test all endpoints
 4. Includes positive and negative test cases
 
-## 📋 Production Checklist
-
-- [ ] Strong JWT secret configured
-- [ ] Database migrations applied
-- [ ] HTTPS/TLS certificate configured
-- [ ] Environment variables secured
-- [ ] Rate limiting configured for production load
-- [ ] Audit log retention policy defined
-- [ ] Monitoring and logging configured
-
 ## 📚 Documentation
 
-- **Security Implementation**: See "Portal Hardening - Design & Implementation Summary.pdf"
 - **API Documentation**: Endpoint details in this README
 - **Database Schema**: `prisma/schema.prisma`
 - **Architecture**: Modular structure with clear separation of concerns
-
-## 🎯 Academic Context
-
-This project fulfills the requirements for APDS7311 Task 2, demonstrating:
-- Secure backend development practices
-- International payment processing workflows
-- Comprehensive attack mitigation strategies
-- Professional code quality and documentation
-
-## 👥 Team
-
-**Group 5** - APDS7311 Class of 2025
-
----
-
-*Built with security-first principles for academic excellence.*
