@@ -15,9 +15,10 @@
           "    url: pm.environment.get('baseUrl') + '/api/csrf',",
           "    method: 'GET'",
           "  }, function(err, res) {",
-          "    if (res && res.headers.get('csrf-token')) {",
-          "      pm.environment.set('csrfToken', res.headers.get('csrf-token'));",
-          "      pm.request.headers.upsert({key: 'x-csrf-token', value: res.headers.get('csrf-token')});",
+          "    if (res && res.json() && res.json().token) {",
+          "      const token = res.json().token;",
+          "      pm.environment.set('csrfToken', token);",
+          "      pm.request.headers.upsert({key: 'x-csrf-token', value: token});",
           "    }",
           "  });",
           "}"
@@ -42,9 +43,11 @@
               "script": {
                 "exec": [
                   "pm.test('CSRF token received', () => {",
-                  "  pm.expect(pm.response.headers.get('csrf-token')).to.not.be.null;",
-                  "  pm.environment.set('csrfToken', pm.response.headers.get('csrf-token'));",
-                  "  console.log('CSRF Token:', pm.response.headers.get('csrf-token'));",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property('token');",
+                  "  pm.environment.set('csrfToken', response.token);",
+                  "  console.log('CSRF Token:', response.token.slice(0, 8) + '...');",
                   "});"
                 ]
               }

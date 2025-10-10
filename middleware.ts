@@ -38,7 +38,19 @@ if (path === '/api/employee/login' || path === '/api/customer/login') {
   // 3) CSRF gate
   if (MUTATING.has(req.method)) {
     const csrfCookie = req.cookies.get('csrf')?.value
-    const csrfHeader = req.headers.get('x-csrf-token')
+    const csrfHeader = req.headers.get('x-csrf-token') || req.headers.get('X-CSRF-Token')
+    
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('CSRF Debug:', {
+        method: req.method,
+        path: url.pathname,
+        cookie: csrfCookie ? `${csrfCookie.slice(0, 8)}...` : 'missing',
+        header: csrfHeader ? `${csrfHeader.slice(0, 8)}...` : 'missing',
+        match: csrfCookie === csrfHeader
+      })
+    }
+    
     if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
       return new NextResponse('CSRF validation failed', { status: 403 })
     }
