@@ -17,6 +17,7 @@ function getClientIp(req: NextRequest): string {
 
 export function middleware(req: NextRequest) {
   const url = new URL(req.url)
+  const isProd = process.env.NODE_ENV === 'production'
 
   if (process.env.NODE_ENV === 'production') {
     const proto = req.headers.get('x-forwarded-proto')
@@ -48,28 +49,41 @@ export function middleware(req: NextRequest) {
   res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
   
   // CSP (tighten/relax if you use CDNs or inline scripts)
-res.headers.set(
-  'Content-Security-Policy',
-  [
-    "default-src 'self'",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "object-src 'none'",
-    "script-src 'self'",            // if you have inline scripts, switch to nonce-based CSP
-    "style-src 'self' 'unsafe-inline'", // keep if you rely on inline styles / Tailwind style tags
-    "img-src 'self' data:",
-    "connect-src 'self'",
-    "font-src 'self' data:",
-    "frame-src 'none'",
-    "manifest-src 'self'"
-  ].join('; ')
-)
+if (isProd) {
+    // Strict CSP for production (what you already had)
+    res.headers.set('Content-Security-Policy', [
+      "default-src 'self'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data:",
+      "connect-src 'self'",
+      "font-src 'self' data:",
+      "frame-src 'none'",
+      "manifest-src 'self'",
+    ].join('; '))
+    res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  } else {
+    // Relax CSP for development so Next.js dev client can run
+    res.headers.set('Content-Security-Policy', [
+      "default-src 'self'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "connect-src 'self' ws: http://localhost:3000 http://127.0.0.1:3000",
+      "font-src 'self' data:",
+      "frame-src 'none'",
+      "manifest-src 'self'",
+    ].join('; '))
+  }
 
-// HSTS (only in prod, and only when you’re actually serving HTTPS)
-if (process.env.NODE_ENV === 'production') {
-  res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
-}
   return res
 }
 
