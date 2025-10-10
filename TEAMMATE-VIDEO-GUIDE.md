@@ -13,7 +13,11 @@ A secure international payment backend with 13 different security implementation
 ### **1. Software Requirements**
 - [ ] **Node.js 18+** installed
 - [ ] **Git** installed
-- [ ] **Postman Desktop App** installed (not web version)
+- [ ] **API Testing Tool** - Choose ONE:
+  - **Postman Desktop App** (recommended - not web/VS Code extension)
+  - **Insomnia** (free alternative - works great)
+  - **Thunder Client** (VS Code extension - simpler)
+  - **PowerShell Script** (included in project - no extra software needed)
 - [ ] **Screen Recording Software** (OBS Studio recommended - free)
 - [ ] **Good Quality Microphone** or headset
 
@@ -101,6 +105,40 @@ npm run dev
    - ✅ Should return status 400 (blocked)
 
 **If any test fails, restart the server and clear cookies in Postman (Settings → Clear Cookies)**
+
+---
+
+## 🔄 **ALTERNATIVE: PowerShell Script Testing (If Postman Won't Work)**
+
+**If Postman installation fails or VS Code extension doesn't work:**
+
+### **Step 1: Use the PowerShell Script**
+1. **Open PowerShell** (right-click Start → Windows PowerShell)
+2. **Navigate to project folder**:
+   ```powershell
+   cd "path\to\APDS7312-POE"
+   ```
+3. **Run the test script**:
+   ```powershell
+   .\test-api-curl.ps1
+   ```
+
+### **Step 2: For Video Recording**
+**Instead of showing Postman, you'll show:**
+- The PowerShell script running with colorful output
+- Each API call with ✅/❌ status indicators
+- Security tests showing validation working
+- Just as impressive as Postman!
+
+### **Script Features:**
+- ✅ **Automatic CSRF token handling**
+- ✅ **Session cookie management** 
+- ✅ **All the same tests** as Postman collection
+- ✅ **Security validation demonstrations**
+- ✅ **Color-coded output** (green for success, red for errors)
+- ✅ **No installation required** - uses built-in PowerShell
+
+**This script tests exactly the same things as the Postman collection!**
 
 ---
 
