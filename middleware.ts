@@ -25,7 +25,7 @@ function getClientIp(req: NextRequest): string {
 export function middleware(req: NextRequest) {
   const url = new URL(req.url)
   const isProd = process.env.NODE_ENV === 'production'
-  
+
   // Globally disable any registration endpoints (to satisfy point 1)
   if (
     url.pathname.startsWith('/api/') &&
@@ -45,9 +45,27 @@ export function middleware(req: NextRequest) {
   // 2) Basic rate limit (per IP) for login endpoints
   const ip = getClientIp(req)
   const path = url.pathname
+  
   if (path === '/api/auth/login' || path === '/api/employee/login' || path === '/api/customer/login') {
     if (!rateLimit(`login:${ip}`)) {
       return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } })
+    }
+  }
+
+  // General limiter for ALL mutating API calls (POST/PUT/PATCH/DELETE)
+  // Exclude login paths to avoid double limiting
+  if (
+    MUTATING.has(req.method) &&
+    path.startsWith('/api/') &&
+    path !== '/api/auth/login' &&
+    path !== '/api/employee/login' &&
+    path !== '/api/customer/login'
+  ) {
+    if (!rateLimit(`mut:${ip}`)) {
+      return new NextResponse('Too Many Requests', {
+        status: 429,
+        headers: { 'Retry-After': '60' }
+      })
     }
   }
 
