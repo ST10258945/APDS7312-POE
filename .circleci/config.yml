@@ -41,6 +41,14 @@ jobs:
 
       # Run SonarCloud scan via Node client (reads sonar-project.properties)
       - run:
+          name: Run unit tests with coverage
+          command: npm run test:ci
+
+      - store_artifacts:
+          path: coverage
+          destination: coverage
+
+      - run:
           name: Run SonarCloud scan
           command: |
             if [ -z "$SONAR_TOKEN" ]; then
