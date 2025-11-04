@@ -2,12 +2,13 @@ version: 2.1
 
 orbs:
   node: circleci/node@5.1.0
-  sonarcloud: sonarsource/sonarcloud@2.0.0
 
 jobs:
   build_and_scan:
     docker:
       - image: cimg/node:20.11
+    environment:
+      CI: "true"
     steps:
       - checkout
 
@@ -20,8 +21,24 @@ jobs:
       - run: npm run lint || true
       - run: npm run build
 
+      # Download SonarScanner CLI
+      - run:
+          name: Download SonarScanner CLI
+          command: |
+            curl -sSLo /tmp/sonar-scanner.zip \
+              https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-5.0.1.3006-linux.zip
+            unzip -q /tmp/sonar-scanner.zip -d /tmp
+            echo 'export PATH="/tmp/sonar-scanner-5.0.1.3006-linux/bin:$PATH"' >> $BASH_ENV
+            source $BASH_ENV
+
       # Run SonarCloud scan (reads sonar-project.properties)
-      - sonarcloud/scan
+      - run:
+          name: Run SonarCloud Scan
+          command: |
+            if [ -z "$SONAR_TOKEN" ]; then
+              echo "Missing SONAR_TOKEN environment variable in CircleCI project settings"; exit 1;
+            fi
+            sonar-scanner -Dsonar.login="$SONAR_TOKEN"
 
 workflows:
   build_and_scan_every_push:
