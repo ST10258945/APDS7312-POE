@@ -12,12 +12,30 @@ jobs:
     steps:
       - checkout
 
-      # Install dependencies with cache
-      - node/install-packages:
-          pkg-manager: npm
-          cache-key: "npm-{{checksum \"package-lock.json\"}}"
+      # Restore npm cache based on package-lock.json
+      - restore_cache:
+          keys:
+            - v1-npm-{{ checksum "package-lock.json" }}
+            - v1-npm-
 
-      # Lint / Build (dont block scan if lint fails yet)
+      # Install dependencies (reproducible)
+      - run:
+          name: Install dependencies
+          command: |
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm i
+            fi
+
+      # Save cache for future runs
+      - save_cache:
+          key: v1-npm-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+            - node_modules
+
+      # Lint / Build (dont fail pipeline on lint yet)
       - run: npm run lint || true
       - run: npm run build
 
@@ -33,10 +51,10 @@ jobs:
 
       # Run SonarCloud scan (reads sonar-project.properties)
       - run:
-          name: Run SonarCloud Scan
+          name: Run SonarCloud scan
           command: |
             if [ -z "$SONAR_TOKEN" ]; then
-              echo "Missing SONAR_TOKEN environment variable in CircleCI project settings"; exit 1;
+              echo "Missing SONAR_TOKEN env var in CircleCI project settings"; exit 1;
             fi
             sonar-scanner -Dsonar.login="$SONAR_TOKEN"
 
