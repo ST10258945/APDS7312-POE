@@ -13,14 +13,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  /* Block registration (Disable Registration to complete Point 1) */
+  if (process.env.ALLOW_REGISTRATION !== 'true') {
+    return res.status(403).json({ error: 'Registration disabled' })
+  }
+
   try {
     const { email, password } = req.body || {}
 
     // Check for missing fields
     if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Missing required fields', 
-        details: 'Email and password are required' 
+      return res.status(400).json({
+        error: 'Missing required fields',
+        details: 'Email and password are required'
       })
     }
 
@@ -33,9 +38,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const validation = validateFields({ email, password }, validationSchema)
 
     if (!validation.isValid) {
-      return res.status(400).json({ 
-        error: 'Invalid input format', 
-        details: validation.errors 
+      return res.status(400).json({
+        error: 'Invalid input format',
+        details: validation.errors
       })
     }
 
@@ -44,12 +49,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const sanitizedPassword = validation.sanitized.password
 
     // Check if user already exists (using sanitized email)
-    const existingUser = await prisma.user.findUnique({ 
-      where: { email: sanitizedEmail } 
+    const existingUser = await prisma.user.findUnique({
+      where: { email: sanitizedEmail }
     })
 
     if (existingUser) {
-      return res.status(409).json({ 
+      return res.status(409).json({
         error: 'Email already registered',
         details: 'A user with this email address already exists'
       })
@@ -59,14 +64,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const passwordHash = await hashPassword(sanitizedPassword)
 
     // Create new user with sanitized inputs
-    const user = await prisma.user.create({ 
-      data: { 
-        email: sanitizedEmail, 
-        passwordHash 
-      } 
+    const user = await prisma.user.create({
+      data: {
+        email: sanitizedEmail,
+        passwordHash
+      }
     })
 
-    return res.status(201).json({ 
+    return res.status(201).json({
       id: user.id,
       email: user.email,
       message: 'User registered successfully'
