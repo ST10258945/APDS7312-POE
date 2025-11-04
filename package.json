@@ -38,9 +38,9 @@
     "eslint-config-next": "15.5.4",
     "local-ssl-proxy": "^2.0.5",
     "prisma": "^6.16.3",
+    "sonarqube-scanner": "^3.5.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "sonarqube-scanner": "^3.1.0"
+    "typescript": "^5"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
