@@ -1,0 +1,32 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.1.0
+  sonarcloud: sonarsource/sonarcloud@2.0.0
+
+jobs:
+  build_and_scan:
+    docker:
+      - image: cimg/node:20.11
+    steps:
+      - checkout
+
+      # Install dependencies with cache
+      - node/install-packages:
+          pkg-manager: npm
+          cache-key: "npm-{{checksum \"package-lock.json\"}}"
+
+      # Lint / Build (dont block scan if lint fails yet)
+      - run: npm run lint || true
+      - run: npm run build
+
+      # Run SonarCloud scan (reads sonar-project.properties)
+      - sonarcloud/scan
+
+workflows:
+  build_and_scan_every_push:
+    jobs:
+      - build_and_scan:
+          filters:
+            branches:
+              only: /.*/
