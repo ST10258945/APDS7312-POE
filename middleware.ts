@@ -25,6 +25,15 @@ function getClientIp(req: NextRequest): string {
 export function middleware(req: NextRequest) {
   const url = new URL(req.url)
   const isProd = process.env.NODE_ENV === 'production'
+  
+  // Globally disable any registration endpoints (to satisfy point 1)
+  if (
+    url.pathname.startsWith('/api/') &&
+    url.pathname.includes('register') &&
+    process.env.ALLOW_REGISTRATION !== 'true'
+  ) {
+    return new NextResponse('Registration disabled', { status: 403 })
+  }
 
   // 1) Enforce HTTPS in all envs (so local demo also shows SSL)
   const proto = req.headers.get('x-forwarded-proto') || 'http'
