@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { prisma } from '../../../lib/db'
+import { prisma } from '@/lib/db'
 import { issueSessionCookie } from '@/lib/session'
-import { verifyPassword } from '../../../lib/auth'
-import { validateEmail, validatePassword, validateFields, containsInjectionPatterns } from '../../../lib/validation'
+import { verifyPassword } from '@/lib/auth'
+import { validateEmail, validateFields, containsInjectionPatterns } from '@/lib/validation'
 
 /**
  * Login API with comprehensive RegEx input validation
@@ -80,8 +80,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       expiresIn: '30m',
       maxAgeSeconds: 60 * 30
     })
-
-    const isProd = process.env.NODE_ENV === 'production'
 
     // Do NOT return token in body
     return res.status(200).json({

@@ -5,10 +5,12 @@ import { issueSessionCookie } from '@/lib/session'
 import { validateUsername, containsInjectionPatterns } from '@/lib/validation'
 import { appendAuditLog } from '@/lib/audit'
 
-console.log('ENV CHECK', {
-  hasJwtSecret: Boolean(process.env.JWT_SECRET),
-  nodeEnv: process.env.NODE_ENV,
-})
+if (process.env.NODE_ENV !== 'production') {
+  console.log('ENV CHECK', {
+    hasJwtSecret: Boolean(process.env.JWT_SECRET),
+    nodeEnv: process.env.NODE_ENV,
+  })
+}
 
 // Normalize IP/UA safely (avoids string | string[] pitfalls)
 function getIp(req: NextApiRequest): string {

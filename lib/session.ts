@@ -5,18 +5,38 @@ import type { SignOptions } from 'jsonwebtoken'
 
 type JwtPayload = Record<string, any>
 
+/** Minimal parser: supports "30m", "8h", "1d", numeric seconds, or "1800" */
+function parseDurationToSeconds(input: SignOptions['expiresIn']): number {
+  if (typeof input === 'number') return input
+  if (!input) return 1800
+  const m = String(input).trim().match(/^(\d+)\s*([smhd])?$/i)
+  if (!m) return 1800
+  const n = parseInt(m[1], 10)
+  const unit = (m[2] || 's').toLowerCase()
+  switch (unit) {
+    case 's': return n
+    case 'm': return n * 60
+    case 'h': return n * 60 * 60
+    case 'd': return n * 60 * 60 * 24
+    default: return n
+  }
+}
+
 export function issueSessionCookie(
   res: NextApiResponse,
   payload: JwtPayload,
-  opts?: { expiresIn?: SignOptions['expiresIn']; maxAgeSeconds?: number } // ← type matches jsonwebtoken
+  opts?: { expiresIn?: SignOptions['expiresIn']; maxAgeSeconds?: number } // type matches jsonwebtoken
 ) {
   const isProd = process.env.NODE_ENV === 'production'
-  const expiresIn: SignOptions['expiresIn'] = opts?.expiresIn ?? '30m' // ← string | number per jwt
-  const maxAge = opts?.maxAgeSeconds ?? 60 * 30 // 30 minutes
+
+  const ttl: SignOptions['expiresIn'] =
+    opts?.expiresIn ?? (process.env.SESSION_TTL as SignOptions['expiresIn']) ?? '30m'
+
+  const maxAge = opts?.maxAgeSeconds ?? parseDurationToSeconds(ttl)
 
   const token = signJwt(
     { iss: 'bank-portal', aud: 'app', ...payload },
-    { expiresIn, algorithm: 'HS256' }
+    { expiresIn: ttl, algorithm: 'HS256' }
   )
 
   res.setHeader(
