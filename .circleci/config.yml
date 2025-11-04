@@ -35,7 +35,7 @@ jobs:
             - ~/.npm
             - node_modules
 
-      # Lint & build (don't fail pipeline on lint yet)
+      # Lint & build (lint is non-blocking; build must pass)
       - run: npm run lint || true
       - run: npm run build
 
@@ -47,15 +47,23 @@ jobs:
             sudo apt-get install -y openjdk-17-jre-headless
             java -version
 
-      # Download SonarScanner CLI (follow redirects, fail on HTTP errors)
+      # Download SonarScanner CLI (GitHub Releases with fallback)
       - run:
           name: Download SonarScanner CLI
           command: |
             set -e
-            SC_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-5.0.1.3006-linux.zip"
-            curl -sSfL -o /tmp/sonar-scanner.zip "$SC_URL"
+            # Primary (GitHub Releases) – tends to avoid 403s seen on the CDN
+            GH_URL="https://github.com/SonarSource/sonar-scanner-cli/releases/download/v5.0.1.3006/sonar-scanner-5.0.1.3006-linux.zip"
+            CDN_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-5.0.1.3006-linux.zip"
+            for URL in "$GH_URL" "$CDN_URL"; do
+              echo "Attempting download: $URL"
+              if curl -sSfL -o /tmp/sonar-scanner.zip "$URL"; then
+                break
+              else
+                echo "Download failed from $URL; trying next source..."
+              fi
+            done
             unzip -q -o /tmp/sonar-scanner.zip -d /tmp
-            # Find extracted dir (version-agnostic)
             SC_DIR="$(find /tmp -maxdepth 1 -type d -name 'sonar-scanner-*-linux' | head -n 1)"
             if [ -z "$SC_DIR" ]; then echo "SonarScanner directory not found"; exit 1; fi
             echo "export PATH=\"$SC_DIR/bin:\$PATH\"" >> "$BASH_ENV"
