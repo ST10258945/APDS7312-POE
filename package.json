@@ -14,6 +14,7 @@
     "migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
+    "sonar:ci": "node scripts/sonar.js",
     "test": "echo \"(no tests yet)\" && exit 0"
   },
   "dependencies": {
@@ -38,7 +39,8 @@
     "local-ssl-proxy": "^2.0.5",
     "prisma": "^6.16.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "sonarqube-scanner": "^3.1.0"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
