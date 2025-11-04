@@ -37,7 +37,7 @@ export function middleware(req: NextRequest) {
 
   // 1) Enforce HTTPS in all envs (so local demo also shows SSL)
   const proto = req.headers.get('x-forwarded-proto') || 'http'
-  if (proto !== 'https') {
+  if (isProd && proto !== 'https') { // <- only enforce in production
     url.protocol = 'https:'
     return NextResponse.redirect(url, 301)
   }
@@ -97,7 +97,9 @@ export function middleware(req: NextRequest) {
   res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
 
   // HSTS whenever we are on HTTPS (good for rubric & demo)
-  res.headers.set('Strict-Transport-Security', 'max-age=15552000; includeSubDomains; preload')
+  if (isProd) { // <- only send HSTS in production
+    res.headers.set('Strict-Transport-Security', 'max-age=15552000; includeSubDomains; preload')
+  }
 
   // CSP
   if (isProd) {
