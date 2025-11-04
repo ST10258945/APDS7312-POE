@@ -53,15 +53,5 @@
   },
   "prisma": {
     "seed": "node prisma/seed.js"
-  },
-  "pnpm": {
-    "trustedDependencies": [
-      "@prisma/client",
-      "prisma",
-      "@prisma/engines",
-      "@tailwindcss/oxide",
-      "sharp",
-      "unrs-resolver"
-    ]
   }
 }
