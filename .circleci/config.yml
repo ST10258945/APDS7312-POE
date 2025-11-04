@@ -18,7 +18,7 @@ jobs:
             - v1-npm-{{ checksum "package-lock.json" }}
             - v1-npm-
 
-      # Install dependencies (reproducible)
+      # Install dependencies
       - run:
           name: Install dependencies
           command: |
@@ -35,26 +35,39 @@ jobs:
             - ~/.npm
             - node_modules
 
-      # Lint / Build (dont fail pipeline on lint yet)
+      # Lint & build (don't fail pipeline on lint yet)
       - run: npm run lint || true
       - run: npm run build
 
-      # Download SonarScanner CLI
+      # Install Java (SonarScanner requires a JRE)
+      - run:
+          name: Install OpenJDK 17 (headless)
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y openjdk-17-jre-headless
+            java -version
+
+      # Download SonarScanner CLI (follow redirects, fail on HTTP errors)
       - run:
           name: Download SonarScanner CLI
           command: |
-            curl -sSLo /tmp/sonar-scanner.zip \
-              https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-5.0.1.3006-linux.zip
-            unzip -q /tmp/sonar-scanner.zip -d /tmp
-            echo 'export PATH="/tmp/sonar-scanner-5.0.1.3006-linux/bin:$PATH"' >> $BASH_ENV
-            source $BASH_ENV
+            set -e
+            SC_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-5.0.1.3006-linux.zip"
+            curl -sSfL -o /tmp/sonar-scanner.zip "$SC_URL"
+            unzip -q -o /tmp/sonar-scanner.zip -d /tmp
+            # Find extracted dir (version-agnostic)
+            SC_DIR="$(find /tmp -maxdepth 1 -type d -name 'sonar-scanner-*-linux' | head -n 1)"
+            if [ -z "$SC_DIR" ]; then echo "SonarScanner directory not found"; exit 1; fi
+            echo "export PATH=\"$SC_DIR/bin:\$PATH\"" >> "$BASH_ENV"
+            source "$BASH_ENV"
+            sonar-scanner --version
 
-      # Run SonarCloud scan (reads sonar-project.properties)
+      # Run SonarCloud scan (uses sonar-project.properties)
       - run:
           name: Run SonarCloud scan
           command: |
             if [ -z "$SONAR_TOKEN" ]; then
-              echo "Missing SONAR_TOKEN env var in CircleCI project settings"; exit 1;
+              echo "Missing SONAR_TOKEN environment variable in CircleCI project settings"; exit 1;
             fi
             sonar-scanner -Dsonar.login="$SONAR_TOKEN"
 
