@@ -5,6 +5,7 @@ import { issueSessionCookie } from '@/lib/session'
 import { rateLimit } from '@/lib/rateLimit'
 import { validateEmployeeId, validatePassword } from '@/lib/validation'
 import { appendAuditLog } from '@/lib/audit'
+import { isIP } from 'node:net'
 
 // Best-effort IP + UA helpers (proxy/CDN aware)
 function getClientIp(req: NextApiRequest): string {
@@ -17,10 +18,28 @@ function getUa(req: NextApiRequest): string {
   return (Array.isArray(ua) ? ua[0] : ua) || ''
 }
 
+// Treat IPv4 127.0.0.0/8, IPv6 ::1 and IPv4-mapped ::ffff:127.x.x.x as loopback
+function isLoopback(ip: string): boolean {
+  const v = isIP(ip)
+  if (v === 4) {
+    const [a] = ip.split('.').map(n => Number(n))
+    return a === 127
+  }
+  if (v === 6) {
+    if (ip === '::1') return true
+    const m = ip.match(/^::ffff:(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/i)
+    if (m) {
+      const a = Number(m[1])
+      return a === 127
+    }
+  }
+  return false
+}
+
 // Optional IP shape check (prod-only)
 function validateIpAddress(ip: string | undefined | null): boolean {
   if (!ip) return false
-  if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('::ffff:127.0.0.1')) return true
+  if (isLoopback(ip)) return true
   const ipv4 = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)
   const ipv6 = /^[0-9a-fA-F:]+$/.test(ip)
   return ipv4 || ipv6
