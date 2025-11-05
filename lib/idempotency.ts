@@ -1,14 +1,15 @@
+import { createHash } from 'node:crypto'
+
 type Entry = { bodyHash: string; expiresAt: number; responseJson?: any }
 
 // Persist across HMR / multi-workers in dev:
 const g = globalThis as unknown as { __idemStore?: Map<string, Entry> }
-if (!g.__idemStore) g.__idemStore = new Map<string, Entry>()
-const store = g.__idemStore!
+g.__idemStore ??= new Map<string, Entry>()
+const store = g.__idemStore
 
 const TTL_MS = 10 * 60 * 1000 // 10 minutes
 
 function sha256(input: string) {
-  const { createHash } = require('crypto')
   return createHash('sha256').update(input).digest('hex')
 }
 

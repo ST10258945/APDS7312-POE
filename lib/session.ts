@@ -9,7 +9,8 @@ type JwtPayload = Record<string, any>
 function parseDurationToSeconds(input: SignOptions['expiresIn']): number {
   if (typeof input === 'number') return input
   if (!input) return 1800
-  const m = String(input).trim().match(/^(\d+)\s*([smhd])?$/i)
+  const re = /^(\d+)\s*([smhd])?$/i
+  const m = re.exec(String(input).trim())
   if (!m) return 1800
   const n = Number.parseInt(m[1], 10)
   const unit = (m[2] || 's').toLowerCase()

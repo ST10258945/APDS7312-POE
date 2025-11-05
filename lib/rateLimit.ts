@@ -1,9 +1,8 @@
-type Key = string
-const buckets = new Map<Key, { tokens: number; ts: number }>()
+const buckets = new Map<string, { tokens: number; ts: number }>()
 const CAPACITY = 3     // requests
 const WINDOW_MS = 60_000   // per minute
 
-export function rateLimit(key: Key) {
+export function rateLimit(key: string) {
   const now = Date.now()
   const b = buckets.get(key) ?? { tokens: CAPACITY, ts: now }
   const refill = ((now - b.ts) / WINDOW_MS) * CAPACITY
