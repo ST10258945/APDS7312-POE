@@ -23,6 +23,26 @@ function getUa(req: NextApiRequest): string {
   return (Array.isArray(ua) ? ua[0] : ua) || ''
 }
 
+async function auditCustomer(
+  req: NextApiRequest,
+  entityId: string,
+  action: 'LOGIN_FAILED' | 'LOGIN_SUCCESS',
+  metadata: Record<string, any>
+) {
+  await appendAuditLog({
+    entityType: 'Customer',
+    entityId,
+    action,
+    ipAddress: getIp(req),
+    userAgent: getUa(req),
+    metadata,
+  });
+}
+
+function badRequest(res: NextApiResponse, error: string, details: string) {
+  return res.status(400).json({ error, details });
+}
+
 /**
  * Customer Login:
  * - Username + password OR Account number + password
@@ -46,16 +66,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Password basic checks
     if (password.length < 1 || password.length > 128) {
-      return res.status(400).json({
-        error: 'Invalid password length',
-        details: 'Password length is invalid',
-      })
+      return badRequest(res, 'Invalid password length', 'Password length is invalid');
     }
     if (containsInjectionPatterns(password)) {
-      return res.status(400).json({
-        error: 'Invalid password format',
-        details: 'Password contains invalid characters',
-      })
+      return badRequest(res, 'Invalid password format', 'Password contains invalid characters');
     }
 
     let customer: Awaited<ReturnType<typeof prisma.customer.findUnique>> | null = null
@@ -65,10 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (username) {
       const uv = validateUsername(username)
       if (!uv.isValid) {
-        return res.status(400).json({
-          error: 'Invalid username format',
-          details: uv.error,
-        })
+        return badRequest(res, 'Invalid username format', uv.error ?? 'Invalid username');
       }
       customer = await prisma.customer.findUnique({ where: { username: uv.sanitized! } })
       loginIdentifier = `username: ${uv.sanitized}`
@@ -77,17 +88,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Login with account number (8–12 digits)
     if (accountNumber && !customer) {
       const trimmed = String(accountNumber).trim()
-      if (!/^[0-9]{8,12}$/.test(trimmed)) {
-        return res.status(400).json({
-          error: 'Invalid account number format',
-          details: 'Account number must be 8-12 digits only',
-        })
+      if (!/^\d{8,12}$/.test(trimmed)) {
+        return badRequest(res, 'Invalid account number format', 'Account number must be 8-12 digits only');
       }
       if (containsInjectionPatterns(trimmed)) {
-        return res.status(400).json({
-          error: 'Invalid account number format',
-          details: 'Account number contains invalid characters',
-        })
+        return badRequest(res, 'Invalid account number format', 'Account number contains invalid characters');
       }
       customer = await prisma.customer.findFirst({ where: { accountNumber: trimmed } })
       loginIdentifier = `account: ${trimmed}`
@@ -95,16 +100,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Not found
     if (!customer) {
-      await appendAuditLog({
-        entityType: 'Customer',
-        entityId: 'unknown',
-        action: 'LOGIN_FAILED',
-        ipAddress: getIp(req),
-        userAgent: getUa(req),
-        metadata: {
-          reason: 'User not found',
-          attempted_login: loginIdentifier,
-        },
+      await auditCustomer(req, 'unknown', 'LOGIN_FAILED', {
+        reason: 'User not found',
+        attempted_login: loginIdentifier,
       })
       return res.status(401).json({ error: 'Invalid credentials' })
     }
@@ -112,16 +110,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Verify password
     const ok = await verifyPassword(password, customer.passwordHash)
     if (!ok) {
-      await appendAuditLog({
-        entityType: 'Customer',
-        entityId: customer.id,
-        action: 'LOGIN_FAILED',
-        ipAddress: getIp(req),
-        userAgent: getUa(req),
-        metadata: {
-          reason: 'Invalid password',
-          login_method: username ? 'username' : 'account_number',
-        },
+      await auditCustomer(req, customer.id, 'LOGIN_FAILED', {
+        reason: 'Invalid password',
+        login_method: username ? 'username' : 'account_number',
       })
       return res.status(401).json({ error: 'Invalid credentials' })
     }
@@ -139,15 +130,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     )
 
     // Audit success (uses chained hash so Prisma type is satisfied)
-    await appendAuditLog({
-      entityType: 'Customer',
-      entityId: customer.id,
-      action: 'LOGIN_SUCCESS',
-      ipAddress: getIp(req),
-      userAgent: getUa(req),
-      metadata: {
-        login_method: username ? 'username' : 'account_number',
-      },
+    await auditCustomer(req, customer.id, 'LOGIN_SUCCESS', {
+      login_method: username ? 'username' : 'account_number',
     })
 
     // Response (do NOT return token)
