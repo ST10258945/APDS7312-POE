@@ -11,7 +11,7 @@ function parseDurationToSeconds(input: SignOptions['expiresIn']): number {
   if (!input) return 1800
   const m = String(input).trim().match(/^(\d+)\s*([smhd])?$/i)
   if (!m) return 1800
-  const n = parseInt(m[1], 10)
+  const n = Number.parseInt(m[1], 10)
   const unit = (m[2] || 's').toLowerCase()
   switch (unit) {
     case 's': return n
