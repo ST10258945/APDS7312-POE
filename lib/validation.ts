@@ -24,10 +24,10 @@ export const REGEX_PATTERNS = {
   FULL_NAME: /^[a-zA-ZÀ-ÿĀ-žА-я\s'-]{2,100}$/,
 
   // South African ID Number: Exactly 13 digits
-  SA_ID_NUMBER: /^[0-9]{13}$/,
+  SA_ID_NUMBER: /^\d{13}$/,
 
   // Bank account number: 8-12 digits (South African standard)
-  ACCOUNT_NUMBER: /^[0-9]{8,12}$/,
+  ACCOUNT_NUMBER:/^\d{8,12}$/,
 
   // SWIFT/BIC Code: 8 or 11 characters, letters and numbers only
   SWIFT_CODE: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/,
@@ -48,7 +48,7 @@ export const REGEX_PATTERNS = {
   RECIPIENT_NAME: /^[a-zA-ZÀ-ÿĀ-žА-я0-9\s'.-]{2,100}$/,
 
   // Payment reference: Alphanumeric with safe special characters
-  PAYMENT_REFERENCE: /^[a-zA-Z0-9\s\-_\.]{1,50}$/,
+  PAYMENT_REFERENCE: /^[A-Za-z0-9\s_.-]{1,50}$/,
 
   // Phone number: International format with country code
   PHONE_NUMBER: /^\+[1-9]\d{1,14}$/,
