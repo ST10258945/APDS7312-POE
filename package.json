@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "npm@10.8.2",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "dev:https": "local-ssl-proxy --source 3443 --target 3001 --cert certs/localhost-cert.pem --key certs/localhost-key.pem",
     "build": "next build",
     "start": "next start -p 3000",
