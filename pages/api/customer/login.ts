@@ -23,6 +23,77 @@ function getUa(req: NextApiRequest): string {
   return (Array.isArray(ua) ? ua[0] : ua) || ''
 }
 
+type CustomerModel = Awaited<ReturnType<typeof prisma.customer.findUnique>>
+type BadReq = { error: string; details: string }
+type FindOk = { ok: true; customer: CustomerModel | null; loginIdentifier: string }
+type FindErr = { ok: false; bad: BadReq }
+
+// --- small helpers to reduce complexity ---
+
+function validateRequiredCombo(
+  username?: unknown,
+  accountNumber?: unknown,
+  password?: unknown
+): string | null {
+  if ((!username && !accountNumber) || !password || typeof password !== 'string') {
+    return 'Either username or account number must be provided along with password'
+  }
+  if (username !== undefined && typeof username !== 'string') return 'Username must be a string'
+  if (accountNumber !== undefined && typeof accountNumber !== 'string') return 'Account number must be a string'
+  return null
+}
+
+function validatePasswordBasic(password: string): string | null {
+  if (password.length < 1 || password.length > 128) return 'Password length is invalid'
+  if (containsInjectionPatterns(password)) return 'Password contains invalid characters'
+  return null
+}
+
+async function findByUsername(username: string): Promise<FindOk | FindErr> {
+  const uv = validateUsername(username)
+  if (!uv.isValid) {
+    return { ok: false, bad: { error: 'Invalid username format', details: uv.error ?? 'Invalid username' } }
+  }
+  const customer = await prisma.customer.findUnique({ where: { username: uv.sanitized! } })
+  return { ok: true, customer, loginIdentifier: `username: ${uv.sanitized}` }
+}
+
+async function findByAccountNumber(accountNumber: string): Promise<FindOk | FindErr> {
+  const trimmed = accountNumber.trim()
+  if (!/^\d{8,12}$/.test(trimmed)) {
+    return { ok: false, bad: { error: 'Invalid account number format', details: 'Account number must be 8-12 digits only' } }
+  }
+  if (containsInjectionPatterns(trimmed)) {
+    return { ok: false, bad: { error: 'Invalid account number format', details: 'Account number contains invalid characters' } }
+  }
+  const customer = await prisma.customer.findFirst({ where: { accountNumber: trimmed } })
+  return { ok: true, customer, loginIdentifier: `account: ${trimmed}` }
+}
+
+/** Try username, then account number (if provided).
+ *  Returns { ok:false, bad } only for 400-type validation errors.
+ *  Returns { ok:true, customer:null } for "not found" so caller can 401.
+ */
+async function resolveIdentity(
+  username?: string,
+  accountNumber?: string
+): Promise<FindOk | FindErr> {
+  if (username) {
+    const u = await findByUsername(username)
+    if (!u.ok) return u
+    if (u.customer) return u
+    if (accountNumber) return findByAccountNumber(accountNumber)
+    return u // ok:true, customer:null, loginIdentifier from username
+  }
+  if (accountNumber) {
+    return findByAccountNumber(accountNumber)
+  }
+  // Should not reach here because required-combo gate runs first
+  return { ok: true, customer: null, loginIdentifier: '' }
+}
+
+// --- audit + response helpers ---
+
 async function auditCustomer(
   req: NextApiRequest,
   entityId: string,
@@ -36,18 +107,15 @@ async function auditCustomer(
     ipAddress: getIp(req),
     userAgent: getUa(req),
     metadata,
-  });
+  })
 }
 
 function badRequest(res: NextApiResponse, error: string, details: string) {
-  return res.status(400).json({ error, details });
+  return res.status(400).json({ error, details })
 }
 
-/**
- * Customer Login:
- * - Username + password OR Account number + password
- * - Strict validation + audit logs (tamper-evident chain)
- */
+// ----------------------------------- handler -----------------------------------
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -56,49 +124,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { username, accountNumber, password } = req.body || {}
 
-    // Required combos
-    if ((!username && !accountNumber) || !password || typeof password !== 'string') {
-      return res.status(400).json({
-        error: 'Missing required fields',
-        details: 'Either username or account number must be provided along with password',
-      })
+    // Required + password checks (+ type sanity for username/accountNumber)
+    const comboErr = validateRequiredCombo(username, accountNumber, password)
+    if (comboErr) {
+      return res.status(400).json({ error: 'Missing required fields', details: comboErr })
     }
+    const pwdErr = validatePasswordBasic(password as string)
+    if (pwdErr) return badRequest(res, 'Invalid password format', pwdErr)
 
-    // Password basic checks
-    if (password.length < 1 || password.length > 128) {
-      return badRequest(res, 'Invalid password length', 'Password length is invalid');
+    // Narrow to strings to avoid object stringification
+    const u = typeof username === 'string' ? username : undefined
+    const a = typeof accountNumber === 'string' ? accountNumber : undefined
+
+    // Resolve identity
+    const identity = await resolveIdentity(u, a)
+    if (!identity.ok) {
+      return badRequest(res, identity.bad.error, identity.bad.details)
     }
-    if (containsInjectionPatterns(password)) {
-      return badRequest(res, 'Invalid password format', 'Password contains invalid characters');
-    }
+    const { customer, loginIdentifier } = identity
 
-    let customer: Awaited<ReturnType<typeof prisma.customer.findUnique>> | null = null
-    let loginIdentifier = ''
-
-    // Login with username
-    if (username) {
-      const uv = validateUsername(username)
-      if (!uv.isValid) {
-        return badRequest(res, 'Invalid username format', uv.error ?? 'Invalid username');
-      }
-      customer = await prisma.customer.findUnique({ where: { username: uv.sanitized! } })
-      loginIdentifier = `username: ${uv.sanitized}`
-    }
-
-    // Login with account number (8–12 digits)
-    if (accountNumber && !customer) {
-      const trimmed = String(accountNumber).trim()
-      if (!/^\d{8,12}$/.test(trimmed)) {
-        return badRequest(res, 'Invalid account number format', 'Account number must be 8-12 digits only');
-      }
-      if (containsInjectionPatterns(trimmed)) {
-        return badRequest(res, 'Invalid account number format', 'Account number contains invalid characters');
-      }
-      customer = await prisma.customer.findFirst({ where: { accountNumber: trimmed } })
-      loginIdentifier = `account: ${trimmed}`
-    }
-
-    // Not found
+    // Not found → 401 with audit
     if (!customer) {
       await auditCustomer(req, 'unknown', 'LOGIN_FAILED', {
         reason: 'User not found',
@@ -108,11 +153,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Verify password
-    const ok = await verifyPassword(password, customer.passwordHash)
+    const ok = await verifyPassword(password as string, customer.passwordHash)
     if (!ok) {
       await auditCustomer(req, customer.id, 'LOGIN_FAILED', {
         reason: 'Invalid password',
-        login_method: username ? 'username' : 'account_number',
+        login_method: u ? 'username' : 'account_number',
       })
       return res.status(401).json({ error: 'Invalid credentials' })
     }
@@ -120,21 +165,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Issue HttpOnly session cookie (JWT)
     issueSessionCookie(
       res,
-      {
-        sub: customer.id,
-        username: customer.username,
-        email: customer.email,
-        type: 'customer',
-      },
+      { sub: customer.id, username: customer.username, email: customer.email, type: 'customer' },
       { expiresIn: '30m', maxAgeSeconds: 60 * 30 }
     )
 
-    // Audit success (uses chained hash so Prisma type is satisfied)
+    // Audit success
     await auditCustomer(req, customer.id, 'LOGIN_SUCCESS', {
-      login_method: username ? 'username' : 'account_number',
+      login_method: u ? 'username' : 'account_number',
     })
 
-    // Response (do NOT return token)
+    // Response (no token returned)
     return res.status(200).json({
       customer: {
         id: customer.id,
