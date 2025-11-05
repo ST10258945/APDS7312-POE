@@ -11,6 +11,7 @@ const customConfig = {
   collectCoverageFrom: [
     'app/**/*.{ts,tsx,js,jsx}',
     'lib/**/*.{ts,tsx,js,jsx}',
+    'pages/**/*.{ts,tsx,js,jsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
     '!**/.next/**',
