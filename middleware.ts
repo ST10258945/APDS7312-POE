@@ -22,104 +22,81 @@ function getClientIp(req: NextRequest): string {
   return cand || 'unknown'
 }
 
-export function middleware(req: NextRequest) {
-  const url = new URL(req.url)
-  const isProd = process.env.NODE_ENV === 'production'
+// --- helpers ---
+const isLoginPath = (p: string) =>
+  p === '/api/auth/login' || p === '/api/employee/login' || p === '/api/customer/login';
 
-  // Globally disable any registration endpoints (to satisfy point 1)
-  if (
-    url.pathname.startsWith('/api/') &&
-    url.pathname.includes('register') &&
-    process.env.ALLOW_REGISTRATION !== 'true'
-  ) {
-    return new NextResponse('Registration disabled', { status: 403 })
+const isMutatingApiPath = (req: NextRequest, p: string) =>
+  MUTATING.has(req.method) && p.startsWith('/api/');
+
+function enforceHttps(req: NextRequest, url: URL, isProd: boolean) {
+  const proto = req.headers.get('x-forwarded-proto') || 'http';
+  if (isProd && proto !== 'https') {
+    url.protocol = 'https:';
+    return NextResponse.redirect(url, 301);
+  }
+  return null;
+}
+
+function checkCsrf(req: NextRequest, path: string) {
+  if (!MUTATING.has(req.method) || CSRF_EXEMPT.has(path)) return null;
+
+  const csrfCookie = req.cookies.get('csrf')?.value;
+  const csrfHeader = req.headers.get('x-csrf-token') || req.headers.get('X-CSRF-Token');
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('CSRF Debug:', {
+      method: req.method,
+      path,
+      cookie: csrfCookie ? `${csrfCookie.slice(0, 8)}...` : 'missing',
+      header: csrfHeader ? `${csrfHeader.slice(0, 8)}...` : 'missing',
+      match: csrfCookie === csrfHeader,
+    });
   }
 
-  // 1) Enforce HTTPS in all envs (so local demo also shows SSL)
-  const proto = req.headers.get('x-forwarded-proto') || 'http'
-  if (isProd && proto !== 'https') { // <- only enforce in production
-    url.protocol = 'https:'
-    return NextResponse.redirect(url, 301)
+  if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+    return new NextResponse('CSRF validation failed', { status: 403 });
   }
+  return null;
+}
 
-  // 2) Basic rate limit (per IP) for login endpoints
-  const ip = getClientIp(req)
-  const path = url.pathname
-  
-  if (path === '/api/auth/login' || path === '/api/employee/login' || path === '/api/customer/login') {
-    if (!rateLimit(`login:${ip}`)) {
-      return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } })
-    }
-  }
+function applySecurityHeaders(res: NextResponse, isProd: boolean) {
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('Referrer-Policy', 'no-referrer');
+  res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 
-  // General limiter for ALL mutating API calls (POST/PUT/PATCH/DELETE)
-  // Exclude login paths to avoid double limiting
-  if (
-    MUTATING.has(req.method) &&
-    path.startsWith('/api/') &&
-    path !== '/api/auth/login' &&
-    path !== '/api/employee/login' &&
-    path !== '/api/customer/login'
-  ) {
-    if (!rateLimit(`mut:${ip}`)) {
-      return new NextResponse('Too Many Requests', {
-        status: 429,
-        headers: { 'Retry-After': '60' }
-      })
-    }
-  }
-
-  // 3) CSRF gate (skip for safe methods and exempted paths)
-  if (MUTATING.has(req.method) && !CSRF_EXEMPT.has(path)) {
-    const csrfCookie = req.cookies.get('csrf')?.value
-    const csrfHeader = req.headers.get('x-csrf-token') || req.headers.get('X-CSRF-Token')
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('CSRF Debug:', {
-        method: req.method,
-        path,
-        cookie: csrfCookie ? `${csrfCookie.slice(0, 8)}...` : 'missing',
-        header: csrfHeader ? `${csrfHeader.slice(0, 8)}...` : 'missing',
-        match: csrfCookie === csrfHeader
-      })
-    }
-
-    if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
-      return new NextResponse('CSRF validation failed', { status: 403 })
-    }
-  }
-
-  // 4) Security headers
-  const res = NextResponse.next()
-  res.headers.set('X-Frame-Options', 'DENY')
-  res.headers.set('X-Content-Type-Options', 'nosniff')
-  res.headers.set('Referrer-Policy', 'no-referrer')
-  res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
-
-  // HSTS whenever we are on HTTPS (good for rubric & demo)
-  if (isProd) { // <- only send HSTS in production
-    res.headers.set('Strict-Transport-Security', 'max-age=15552000; includeSubDomains; preload')
-  }
-
-  // CSP
   if (isProd) {
-    res.headers.set('Content-Security-Policy', [
-      "default-src 'self'",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "object-src 'none'",
-      "script-src 'self'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data:",
-      "connect-src 'self'",
-      "font-src 'self' data:",
-      "frame-src 'none'",
-      "manifest-src 'self'",
-    ].join('; '))
-  } else {
-    // Allow Next dev client + your HTTPS proxy on 3443
-    res.headers.set('Content-Security-Policy', [
+    res.headers.set('Strict-Transport-Security', 'max-age=15552000; includeSubDomains; preload');
+  }
+}
+
+function setCsp(res: NextResponse, isProd: boolean) {
+  if (isProd) {
+    res.headers.set(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "object-src 'none'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "connect-src 'self'",
+        "font-src 'self' data:",
+        "frame-src 'none'",
+        "manifest-src 'self'",
+      ].join('; ')
+    );
+    return;
+  }
+
+  // Dev
+  res.headers.set(
+    'Content-Security-Policy',
+    [
       "default-src 'self'",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -132,10 +109,48 @@ export function middleware(req: NextRequest) {
       "font-src 'self' data:",
       "frame-src 'none'",
       "manifest-src 'self'",
-    ].join('; '))
+    ].join('; ')
+  );
+}
+// --- end helpers ---
+
+export function middleware(req: NextRequest) {
+  const url = new URL(req.url);
+  const isProd = process.env.NODE_ENV === 'production';
+  const path = url.pathname;
+
+  // Disable registration endpoints unless explicitly enabled
+  if (path.startsWith('/api/') && path.includes('register') && process.env.ALLOW_REGISTRATION !== 'true') {
+    return new NextResponse('Registration disabled', { status: 403 });
   }
 
-  return res
+  // HTTPS enforcement (prod only)
+  const httpsRedirect = enforceHttps(req, url, isProd);
+  if (httpsRedirect) return httpsRedirect;
+
+  // Rate limit for login
+  const ip = getClientIp(req);
+  if (isLoginPath(path) && !rateLimit(`login:${ip}`)) {
+    return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } });
+  }
+
+  // General mutating APIs (excluding login)
+  if (isMutatingApiPath(req, path) && !isLoginPath(path)) {
+    if (!rateLimit(`mut:${ip}`)) {
+      return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } });
+    }
+  }
+
+  // CSRF (skip for exempted)
+  const csrfFailure = checkCsrf(req, path);
+  if (csrfFailure) return csrfFailure;
+
+  // Security headers + CSP
+  const res = NextResponse.next();
+  applySecurityHeaders(res, isProd);
+  setCsp(res, isProd);
+
+  return res;
 }
 
 export const config = {
