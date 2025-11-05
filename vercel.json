@@ -1,9 +1,4 @@
 {
   "buildCommand": "npm run build",
-  "installCommand": "npm ci",
-  "functions": {
-    "nodeVersion": {
-      "default": "20.x"
-    }
-  }
+  "installCommand": "npm ci"
 }
