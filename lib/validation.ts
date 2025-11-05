@@ -183,7 +183,7 @@ export function validateAmount(amount: string): ValidationResult {
     return { isValid: false, error: 'Amount must be a positive number with up to 2 decimal places (max 10 digits before decimal).' };
   }
 
-  const numericAmount = parseFloat(trimmed);
+  const numericAmount = Number.parseFloat(trimmed);
   if (numericAmount < 0.01 || numericAmount > 999999999.99) {
     return { isValid: false, error: 'Amount must be between 0.01 and 999,999,999.99.' };
   }
