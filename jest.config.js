@@ -8,6 +8,9 @@ const customConfig = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['lcov', 'text-summary'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+  },
   collectCoverageFrom: [
     'app/**/*.{ts,tsx,js,jsx}',
     'lib/**/*.{ts,tsx,js,jsx}',
