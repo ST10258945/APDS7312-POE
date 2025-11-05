@@ -18,7 +18,7 @@ export const REGEX_PATTERNS = {
 
   // Password: Minimum security requirements, no SQL injection characters
   // Must be 8-128 chars, include uppercase, lowercase, number, special char
-  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;:,.<>?])[A-Za-z\d!@#$%^&*()_+\-=\[\]{}|;:,.<>?]{8,128}$/,
+  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{}|;:,.<>?])[A-Za-z\d!@#$%^&*()_+\-=[\]{}|;:,.<>?]{8,128}$/,
 
   // Full name: Letters, spaces, hyphens, apostrophes only (international names)
   FULL_NAME: /^[a-zA-ZÀ-ÿĀ-žА-я\s'-]{2,100}$/,
@@ -68,9 +68,9 @@ export const REGEX_PATTERNS = {
  */
 
 export function validateEmail(email: string): ValidationResult {
-  if (!email || typeof email !== 'string') {
-    return { isValid: false, error: 'Email is required and must be a string' };
-  }
+  if (typeof email !== 'string') return { isValid: false, error: 'Email is required and must be a string' };
+  if (email.length === 0) return { isValid: false, error: 'Email is required and must be a string' };
+
 
   const trimmed = email.trim().toLowerCase();
 
@@ -82,7 +82,7 @@ export function validateEmail(email: string): ValidationResult {
 }
 
 export function validatePassword(password: string): ValidationResult {
-  if (!password || typeof password !== 'string') {
+  if (typeof password !== 'string' || password.length === 0) {
     return { isValid: false, error: 'Password is required and must be a string' };
   }
 
@@ -97,7 +97,7 @@ export function validatePassword(password: string): ValidationResult {
 }
 
 export function validateFullName(name: string): ValidationResult {
-  if (!name || typeof name !== 'string') {
+  if (typeof name !== 'string' || name.length === 0) {
     return { isValid: false, error: 'Full name is required and must be a string' };
   }
 
@@ -111,7 +111,7 @@ export function validateFullName(name: string): ValidationResult {
 }
 
 export function validateSAIdNumber(idNumber: string): ValidationResult {
-  if (!idNumber || typeof idNumber !== 'string') {
+  if (typeof idNumber !== 'string' || idNumber.length === 0) {
     return { isValid: false, error: 'ID number is required and must be a string' };
   }
 
@@ -125,7 +125,7 @@ export function validateSAIdNumber(idNumber: string): ValidationResult {
 }
 
 export function validateAccountNumber(accountNumber: string): ValidationResult {
-  if (!accountNumber || typeof accountNumber !== 'string') {
+  if (typeof accountNumber !== 'string' || accountNumber.length === 0) {
     return { isValid: false, error: 'Account number is required and must be a string' };
   }
 
@@ -139,7 +139,7 @@ export function validateAccountNumber(accountNumber: string): ValidationResult {
 }
 
 export function validateSwiftCode(swiftCode: string): ValidationResult {
-  if (!swiftCode || typeof swiftCode !== 'string') {
+  if (typeof swiftCode !== 'string' || swiftCode.length === 0) {
     return { isValid: false, error: 'SWIFT code is required and must be a string' };
   }
 
@@ -153,7 +153,7 @@ export function validateSwiftCode(swiftCode: string): ValidationResult {
 }
 
 export function validateCurrencyCode(currencyCode: string): ValidationResult {
-  if (!currencyCode || typeof currencyCode !== 'string') {
+  if (typeof currencyCode !== 'string' || currencyCode.length === 0) {
     return { isValid: false, error: 'Currency code is required and must be a string' };
   }
 
@@ -173,7 +173,7 @@ export function validateCurrencyCode(currencyCode: string): ValidationResult {
 }
 
 export function validateAmount(amount: string): ValidationResult {
-  if (!amount || typeof amount !== 'string') {
+  if (typeof amount !== 'string' || amount.length === 0) {
     return { isValid: false, error: 'Amount is required and must be a string' };
   }
 
@@ -192,7 +192,7 @@ export function validateAmount(amount: string): ValidationResult {
 }
 
 export function validateUsername(username: string): ValidationResult {
-  if (!username || typeof username !== 'string') {
+  if (typeof username !== 'string' || username.length === 0) {
     return { isValid: false, error: 'Username is required and must be a string' };
   }
 
@@ -206,7 +206,7 @@ export function validateUsername(username: string): ValidationResult {
 }
 
 export function validateProviderName(providerName: string): ValidationResult {
-  if (!providerName || typeof providerName !== 'string') {
+  if (typeof providerName !== 'string' || providerName.length === 0) {
     return { isValid: false, error: 'Provider name is required and must be a string' };
   }
 
@@ -220,7 +220,7 @@ export function validateProviderName(providerName: string): ValidationResult {
 }
 
 export function validateRecipientName(recipientName: string): ValidationResult {
-  if (!recipientName || typeof recipientName !== 'string') {
+  if (typeof recipientName !== 'string' || recipientName.length === 0) {
     return { isValid: false, error: 'Recipient name is required and must be a string' };
   }
 
@@ -234,7 +234,7 @@ export function validateRecipientName(recipientName: string): ValidationResult {
 }
 
 export function validatePaymentReference(reference: string): ValidationResult {
-  if (!reference || typeof reference !== 'string') {
+  if (typeof reference !== 'string' || reference.length === 0) {
     return { isValid: false, error: 'Payment reference is required and must be a string' };
   }
 
@@ -248,7 +248,7 @@ export function validatePaymentReference(reference: string): ValidationResult {
 }
 
 export function validateEmployeeId(employeeId: string): ValidationResult {
-  if (!employeeId || typeof employeeId !== 'string') {
+  if (typeof employeeId !== 'string' || employeeId.length === 0) {
     return { isValid: false, error: 'Employee ID is required and must be a string' };
   }
 
@@ -273,10 +273,10 @@ export function validateFields(data: Record<string, any>, validationSchema: Reco
     const value = data[field];
     const result = validator(value);
 
-    if (!result.isValid) {
-      errors[field] = result.error!;
-    } else {
+    if (result.isValid) {
       sanitized[field] = result.sanitized ?? value;
+    } else {
+      errors[field] = result.error ?? 'Invalid value';
     }
   }
 
@@ -311,7 +311,7 @@ function stripScriptTags(input: string, max = 10_000): string {
  * This is a fallback for cases where strict validation isn't possible
  */
 export function sanitizeInput(input: string): string {
-  if (!input || typeof input !== 'string') return '';
+  if (typeof input !== 'string' || input.length === 0) return '';
 
   // Start with trimming, then run simple regex-based stripping where safe,
   // and use a linear-time helper for <script> blocks to avoid regex backtracking.
