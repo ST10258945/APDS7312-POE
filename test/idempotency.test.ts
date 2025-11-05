@@ -1,21 +1,15 @@
-import { rememberRequest } from '../lib/idempotency';
+import { rememberRequest } from '@/lib/idempotency';
 
-describe('rememberRequest', () => {
-  test('miss then write then hit with same body', () => {
-    const idemA = rememberRequest('k1', '/r', { a: 1 });
-    expect(idemA.hit).toBeNull();
+describe('idempotency rememberRequest', () => {
+  test('hit on same route+key+body', () => {
+    const r1 = rememberRequest('k', '/api/pay', { a: 1 });
+    expect(r1.hit).toBeNull();
+    r1.write({ ok: true });
 
-    idemA.write({ ok: true });
+    const r2 = rememberRequest('k', '/api/pay', { a: 1 });
+    expect(r2.hit?.responseJson).toEqual({ ok: true });
 
-    const idemB = rememberRequest('k1', '/r', { a: 1 });
-    expect(idemB.hit).not.toBeNull();
-    expect(idemB.hit?.responseJson).toEqual({ ok: true });
-  });
-
-  test('different body -> no hit', () => {
-    const idem = rememberRequest('k2', '/r', { a: 1 });
-    idem.write({ ok: true });
-    const miss = rememberRequest('k2', '/r', { a: 2 });
-    expect(miss.hit).toBeNull();
+    const r3 = rememberRequest('k', '/api/pay', { a: 2 });
+    expect(r3.hit).toBeNull();
   });
 });

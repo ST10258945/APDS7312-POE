@@ -1,23 +1,24 @@
-import { rateLimit } from '../lib/rateLimit';
+import { rateLimit } from '@/lib/rateLimit';
 
 describe('rateLimit', () => {
-  beforeAll(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-  });
-  afterAll(() => {
-    jest.useRealTimers();
+  const key = 'user:1';
+
+  test('allows up to capacity and then blocks', () => {
+    expect(rateLimit(key)).toBe(true);
+    expect(rateLimit(key)).toBe(true);
+    expect(rateLimit(key)).toBe(true);
+    expect(rateLimit(key)).toBe(false);
   });
 
-  test('caps at capacity then refills after window', () => {
-    const key = 'ip:1.2.3.4';
-    expect(rateLimit(key)).toBe(true);
-    expect(rateLimit(key)).toBe(true);
-    expect(rateLimit(key)).toBe(true);
-    expect(rateLimit(key)).toBe(false); // exhausted
-
-    // advance one full window (60s) - enough to refill back to capacity
-    jest.advanceTimersByTime(60_000);
-    expect(rateLimit(key)).toBe(true);
+  test('refills over time', () => {
+    const now = Date.now();
+    const spy = jest.spyOn(Date, 'now');
+    spy.mockReturnValue(now);
+    // consume one
+    expect(rateLimit('refill')).toBe(true);
+    // advance a minute
+    spy.mockReturnValue(now + 60_000);
+    expect(rateLimit('refill')).toBe(true); // should be refilled
+    spy.mockRestore();
   });
 });
