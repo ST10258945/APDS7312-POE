@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function hashPassword(password) {
-  const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+  const rounds = Number.parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
   return bcrypt.hash(password, rounds);
 }
 

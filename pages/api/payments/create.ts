@@ -122,7 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Generate unique transaction ID
     // Use base36 timestamp (shorter) + CSPRNG UUID fragment
     const timestamp = Date.now().toString(36).toUpperCase()
-    const randomSuffix = randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()
+    const randomSuffix = randomUUID().replaceAll('-', '').slice(0, 8).toUpperCase()
     const transactionId = `TXN-${timestamp}-${randomSuffix}`
 
     // Create payment record with all sanitized inputs
