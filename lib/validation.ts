@@ -317,15 +317,15 @@ export function sanitizeInput(input: string): string {
   // and use a linear-time helper for <script> blocks to avoid regex backtracking.
   let value = input.trim()
     // Remove null bytes and control characters
-    .replace(/[\x00-\x1F\x7F]/g, '')
+    .replaceAll(/\p{Cc}+/gu, '')
     // Remove SQL injection patterns
-    .replace(/[';\"\\]/g, '');
+    .replaceAll(/[';"\\]/g, '');
 
   // Remove script tags (linear-time, no regex backtracking)
   value = stripScriptTags(value);
 
   // Remove other HTML tags
-  value = value.replace(/<[^>]*>/g, '');
+  value = value.replaceAll(/<[^>]*>/g, '');
 
   // Limit length to prevent DoS
   return value.substring(0, 1000);
