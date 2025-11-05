@@ -13,8 +13,9 @@ export async function verifyPassword(p: string, h: string) {
 
 // signJwt now accepts standard jwt.SignOptions
 export function signJwt(payload: object, opts?: jwt.SignOptions) {
-  return jwt.sign({ iss: 'bank-portal', aud: 'app', ...payload }, JWT_SECRET,
-    { algorithm: 'HS256', expiresIn: '1h', ...(opts ?? {}) })
+  const base: jwt.SignOptions = { algorithm: 'HS256', expiresIn: '1h' }
+  const options = opts ? { ...base, ...opts } : base
+  return jwt.sign({ iss: 'bank-portal', aud: 'app', ...payload }, JWT_SECRET, options)
 }
 
 /** Safe verify that returns null on failure instead of throwing */

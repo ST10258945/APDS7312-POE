@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { createHash } from 'crypto'
+import { createHash } from 'node:crypto'
 
 type LogInput = {
   entityType: string
@@ -8,6 +8,11 @@ type LogInput = {
   ipAddress?: string | null
   userAgent?: string | null
   metadata?: any
+}
+
+function toMetadataString(meta: unknown): string | null {
+  if (meta == null) return null;
+  return typeof meta === 'string' ? meta : JSON.stringify(meta);
 }
 
 /** canonicalize + sha256(prevHash + entry) so logs are tamper-evident */
@@ -44,12 +49,7 @@ export async function appendAuditLog(entry: LogInput) {
 
   const prevHash = last?.hash ?? null
   const timestampISO = new Date().toISOString()
-  const metadataStr =
-    entry.metadata != null
-      ? typeof entry.metadata === 'string'
-        ? entry.metadata
-        : JSON.stringify(entry.metadata)
-      : null
+  const metadataStr = toMetadataString(entry.metadata)
 
   const hash = computeLogHash({
     entityType: entry.entityType,
