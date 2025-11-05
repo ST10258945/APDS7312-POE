@@ -9,6 +9,9 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 const CSRF_EXEMPT = new Set([
   '/api/csrf',
   '/api/employee/admin/create',
+  '/api/employee/login',
+  '/api/customer/login',
+  '/api/customer/register',
 ])
 
 /** Best-effort IP extractor for middleware (works locally and behind proxies/CDNs) */
@@ -119,9 +122,9 @@ export function middleware(req: NextRequest) {
   const isProd = process.env.NODE_ENV === 'production';
   const path = url.pathname;
 
-  // Disable registration endpoints unless explicitly enabled
-  if (path.startsWith('/api/') && path.includes('register') && process.env.ALLOW_REGISTRATION !== 'true') {
-    return new NextResponse('Registration disabled', { status: 403 });
+  // Disable EMPLOYEE registration always, allow CUSTOMER registration
+  if (path === '/api/employee/register' || path === '/api/auth/register') {
+    return new NextResponse('Employee registration disabled', { status: 403 });
   }
 
   // HTTPS enforcement (prod only)

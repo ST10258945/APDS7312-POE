@@ -21,6 +21,8 @@ if (isProd) cspDirectives.push("upgrade-insecure-requests");
 const csp = cspDirectives.join("; ");
 
 const nextConfig: NextConfig = {
+  // Disable strict mode to suppress hydration warnings from browser password managers
+  reactStrictMode: false,
   // Let Next build proceed even if ESLint errors exist (lint still runs separately in CI)
   eslint: {
     ignoreDuringBuilds: true,
