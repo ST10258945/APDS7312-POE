@@ -6,10 +6,11 @@ import type { Prisma, PaymentStatus } from '@prisma/client'
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
   const session = req.cookies.session ? verifyJwt<any>(req.cookies.session) : null
-  if (!session || session.type !== 'employee') return res.status(401).json({ error: 'Not authenticated' })
+  if (session?.type !== 'employee') return res.status(401).json({ error: 'Not authenticated' })
 
   // Normalize & validate status filter
-  const qStatus = typeof req.query.status === 'string' ? req.query.status.toUpperCase() : undefined
+  const rawStatus = Array.isArray(req.query.status) ? req.query.status[0] : req.query.status
+  const qStatus = typeof rawStatus === 'string' ? rawStatus.toUpperCase() : undefined
   const allowed: PaymentStatus[] = ['PENDING', 'VERIFIED', 'SUBMITTED'] // adjust to your schema
   const statusFilter = qStatus && allowed.includes(qStatus as PaymentStatus) ? (qStatus as PaymentStatus) : undefined
 
