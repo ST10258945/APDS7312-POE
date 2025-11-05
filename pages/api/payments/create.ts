@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import { verifyJwt } from '@/lib/auth'
 import { appendAuditLog } from '@/lib/audit'
 import { rememberRequest } from '@/lib/idempotency'
-import { randomUUID } from 'crypto'
+import { randomUUID } from 'node:crypto'
 
 import {
   validateAmount,
@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Verify JWT token and extract customer information
     const sessionToken = req.cookies.session
     const session = sessionToken ? verifyJwt<any>(sessionToken) : null
-    if (!session || session.type !== 'customer') {
+    if (session?.type !== 'customer') {
       return res.status(401).json({ error: 'Not authenticated' })
     }
     const customerId = session.sub
@@ -64,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Check for missing required fields
     const requiredFields = ['amount', 'currency', 'provider', 'recipientName', 'recipientAccount', 'swiftCode']
-    const missingFields = requiredFields.filter(field => !req.body[field])
+    const missingFields = requiredFields.filter(field => !(req.body?.[field]))
 
     if (missingFields.length > 0) {
       return res.status(400).json({

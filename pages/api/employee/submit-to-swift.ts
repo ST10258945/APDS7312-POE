@@ -4,45 +4,73 @@ import { verifyJwt } from '@/lib/auth'
 import { rememberRequest } from '@/lib/idempotency'
 import { appendAuditLog } from '@/lib/audit'
 
+// helpers to reduce branches in handler
+function getIdempotencyKey(req: NextApiRequest): string | undefined {
+  const raw = req.headers['idempotency-key'] ?? (req.headers as any)['Idempotency-Key']
+  return Array.isArray(raw) ? raw[0] : raw
+}
+function getClientIp(req: NextApiRequest): string {
+  const xff = req.headers['x-forwarded-for']
+  const first = Array.isArray(xff) ? xff[0] : xff
+  return first?.split(',')[0]?.trim() ?? req.socket.remoteAddress ?? 'unknown'
+}
+function requireEmployeeSession(req: NextApiRequest, res: NextApiResponse) {
+  const token = req.cookies.session
+  if (!token) {
+    res.status(401).json({ error: 'Not authenticated' })
+    return null
+  }
+  const session = verifyJwt<any>(token)
+  if (session?.type !== 'employee') {
+    res.status(403).json({ error: 'Forbidden - staff only' })
+    return null
+  }
+  return session
+}
+function verifyActionTokenOr403(
+  res: NextApiResponse,
+  token: string,
+  expect: { aud: string; iss: string; sub: string; action: string }
+) {
+  const payload = verifyJwt<any>(token, { aud: expect.aud, iss: expect.iss })
+  if (!payload || payload.aud !== expect.aud || String(payload.sub) !== String(expect.sub) || payload.action !== expect.action) {
+    res.status(403).json({ error: 'Invalid action token' })
+    return null
+  }
+  if (!payload.jti) {
+    res.status(403).json({ error: 'Invalid token' })
+    return null
+  }
+  return payload as { jti: string }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
 
-    const idemKey = (req.headers['idempotency-key'] ??
-                     (req.headers as any)['Idempotency-Key']) as string | undefined
+    const idemKey = getIdempotencyKey(req)
     if (idemKey) {
       const idem = rememberRequest(idemKey, 'employee/submit-to-swift', req.body)
       if (idem.hit) return res.status(200).json(idem.hit.responseJson)
     }
 
-    const sessionToken = req.cookies.session
-    if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' })
-
-    const session = verifyJwt(sessionToken)
-    if (!session || session.type !== 'employee') return res.status(403).json({ error: 'Forbidden - staff only' })
+    const session = requireEmployeeSession(req, res)
+    if (!session) return
 
     const { actionToken, paymentId } = req.body || {}
-    if (!actionToken || !paymentId) return res.status(400).json({ error: 'Missing required fields' })
-
-    // Verify action token (must be issued for actions)
-    const tokenPayload = verifyJwt<any>(actionToken, { aud: 'action-token', iss: 'bank-portal' })
-    if (!tokenPayload || tokenPayload.aud !== 'action-token') {
-      return res.status(403).json({ error: 'Invalid action token' })
+    if (typeof actionToken !== 'string' || typeof paymentId !== 'string') {
+      return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // token must belong to this employee and be for SUBMIT_TO_SWIFT (or similar)
-    if (String(tokenPayload.sub) !== String(session.sub)) {
-      return res.status(403).json({ error: 'Action token not for this user' })
-    }
-
-    // confirm action matches expected
-    if (tokenPayload.action !== 'SUBMIT_TO_SWIFT') {
-      return res.status(403).json({ error: 'Action token not valid for this operation' })
-    }
-
-    const jti = tokenPayload.jti
-    if (!jti) return res.status(403).json({ error: 'Invalid token' })
+    const tok = verifyActionTokenOr403(res, actionToken, {
+      aud: 'action-token',
+      iss: 'bank-portal',
+      sub: session.sub,
+      action: 'SUBMIT_TO_SWIFT',
+    })
+    if (!tok) return
+    const jti = tok.jti
 
     // Check audit log for issued token and ensure not yet consumed
     const issued = await prisma.auditLog.findFirst({
@@ -68,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: 'Action token already used' })
     }
 
-const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
+    const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
     if (!payment) return res.status(404).json({ error: 'Payment not found' })
     if (payment.status !== 'VERIFIED') {
       return res.status(400).json({ error: 'Payment not ready for SWIFT' })
@@ -79,7 +107,7 @@ const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
       entityType: 'Employee',
       entityId: session.sub,
       action: 'ACTION_TOKEN_CONSUMED',
-      ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+      ipAddress: getClientIp(req),
       userAgent: req.headers['user-agent'] || null,
       metadata: { jti, paymentId }
     })
@@ -103,7 +131,7 @@ const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
       entityType: 'Payment',
       entityId: paymentId,
       action: 'SUBMITTED_TO_SWIFT',
-      ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+      ipAddress: getClientIp(req),
       userAgent: req.headers['user-agent'] || null,
       metadata: { by: session.sub, employeeId: session.employeeId, jti }
     })
