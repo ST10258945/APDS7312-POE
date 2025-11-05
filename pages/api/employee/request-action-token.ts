@@ -1,16 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { prisma } from '@/lib/db'
 import { verifyJwt, signJwt } from '@/lib/auth'
 import { appendAuditLog } from '@/lib/audit'
 import { rateLimit } from '@/lib/rateLimit'
+import { randomBytes } from 'node:crypto'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
     // ---- per-route rate limit (token issuance) ----
-    const ipForRate = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
-      || req.socket.remoteAddress || 'unknown';
+    const xff = req.headers['x-forwarded-for']
+    const firstXff = Array.isArray(xff) ? xff[0] : xff
+    const ipForRate =
+      firstXff?.split(',')[0]?.trim() ??
+      req.socket.remoteAddress ??
+      'unknown'
     if (!rateLimit(`emp-token-ip:${ipForRate}`)) {
       return res.status(429).json({ error: 'Too many requests from this IP' })
     }
@@ -20,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' })
 
     const session = verifyJwt(sessionToken)
-    if (!session || session.type !== 'employee') return res.status(403).json({ error: 'Forbidden - staff only' })
+    if (session?.type !== 'employee') return res.status(403).json({ error: 'Forbidden - staff only' })
 
     // ---- per-employee throttle (session-scoped) ----
     if (!rateLimit(`emp-token-user:${session.sub}`)) {
@@ -49,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       entityType: 'Employee',
       entityId: session.sub,
       action: 'ACTION_TOKEN_ISSUED',
-      ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+      ipAddress: firstXff ?? req.socket.remoteAddress ?? null,
       userAgent: req.headers['user-agent'] || null,
       metadata: { jti, action, context, employeeId: session.employeeId }
     })
@@ -63,7 +67,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 /** helper: small secure random function */
 function cryptoRandomString(len = 32) {
-  // Node's built-in crypto
-  const { randomBytes } = require('crypto')
   return randomBytes(Math.ceil(len / 2)).toString('hex').slice(0, len)
 }
