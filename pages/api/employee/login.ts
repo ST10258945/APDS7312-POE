@@ -40,9 +40,9 @@ function isLoopback(ip: string): boolean {
 function validateIpAddress(ip: string | undefined | null): boolean {
   if (!ip) return false
   if (isLoopback(ip)) return true
-  const ipv4 = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)
-  const ipv6 = /^[0-9a-fA-F:]+$/.test(ip)
-  return ipv4 || ipv6
+  // Use Node's robust parser: 0 (invalid), 4, or 6
+  const v = isIP(ip)
+  return v === 4 || v === 6
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -189,3 +189,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }
+
+// Expose tiny helpers for unit tests only (tree-shaken in prod)
+export const __test = { isLoopback, validateIpAddress }
