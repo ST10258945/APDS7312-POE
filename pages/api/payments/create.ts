@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { verifyJwt } from '@/lib/auth'
 import { appendAuditLog } from '@/lib/audit'
 import { rememberRequest } from '@/lib/idempotency'
+import { randomUUID } from 'crypto'
 
 import {
   validateAmount,
@@ -119,8 +120,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Generate unique transaction ID
-    const timestamp = Date.now().toString()
-    const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase()
+    // Use base36 timestamp (shorter) + CSPRNG UUID fragment
+    const timestamp = Date.now().toString(36).toUpperCase()
+    const randomSuffix = randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()
     const transactionId = `TXN-${timestamp}-${randomSuffix}`
 
     // Create payment record with all sanitized inputs
@@ -186,7 +188,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     if (idemKey) rememberRequest(idemKey, 'payments/create', req.body).write(responsePayload)
-return res.status(201).json(responsePayload)
+    return res.status(201).json(responsePayload)
 
   } catch (error) {
     console.error('Payment creation error:', error)
