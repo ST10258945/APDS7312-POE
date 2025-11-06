@@ -22,16 +22,18 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   if (toasts.length === 0) return null
 
   return (
-    <div
+    <section
       className="fixed top-4 right-4 z-[60] space-y-2 max-w-md w-full"
-      role="region"
+      aria-labelledby="toast-notifications-title"
       aria-live="polite"
-      aria-label="Notifications"
     >
+      <h2 id="toast-notifications-title" className="sr-only">
+        Notifications
+      </h2>
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
-    </div>
+    </section>
   )
 }
 
