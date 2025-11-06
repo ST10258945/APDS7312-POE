@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, ReactNode } from 'react'
+import { useEffect, useRef, ReactNode, useState } from 'react'
 
 interface ModalProps {
   isOpen: boolean
@@ -9,10 +9,11 @@ interface ModalProps {
   children: ReactNode
   closeOnBackdropClick?: boolean
   closeOnEscape?: boolean
+  stacking?: number // 0 = base (z-50), 1 = nested (z-60), 2 = further nested (z-70)
 }
 
 /**
- * Modal component for dialogs and confirmations
+ * Modal component for dialogs and confirmations with stacking support and smooth animations
  */
 export function Modal({
   isOpen,
@@ -21,9 +22,16 @@ export function Modal({
   children,
   closeOnBackdropClick = true,
   closeOnEscape = true,
+  stacking = 0,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+
+  // Calculate z-index based on stacking level
+  const zIndex = stacking === 0 ? 50 : stacking === 1 ? 60 : 70
 
   // Handle Escape key
   useEffect(() => {
@@ -31,13 +39,13 @@ export function Modal({
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose()
+        handleClose()
       }
     }
 
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, closeOnEscape, onClose])
+  }, [isOpen, closeOnEscape])
 
   // Focus trap
   useEffect(() => {
@@ -46,22 +54,28 @@ export function Modal({
     // Save previous focus
     previousFocusRef.current = document.activeElement as HTMLElement
 
-    // Focus modal
+    // Focus modal with slight delay for animation
     const modal = modalRef.current
     if (modal) {
-      const focusableElements = modal.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      )
-      const firstElement = focusableElements[0]
-      if (firstElement) {
-        firstElement.focus()
-      }
+      setTimeout(() => {
+        const focusableElements = modal.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        const firstElement = focusableElements[0]
+        if (firstElement) {
+          firstElement.focus()
+        }
+      }, 100)
 
       // Trap focus within modal
       const handleTab = (e: KeyboardEvent) => {
         if (e.key !== 'Tab') return
 
-        const focusableArray = Array.from(focusableElements)
+        const focusableArray = Array.from(
+          modal.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          )
+        )
         const first = focusableArray[0]
         const last = focusableArray[focusableArray.length - 1]
 
@@ -99,39 +113,79 @@ export function Modal({
     }
   }, [isOpen])
 
-  if (!isOpen) return null
+  // Handle entrance animation
+  useEffect(() => {
+    if (isOpen) {
+      setIsAnimating(true)
+      setIsVisible(true)
+      // Trigger animation after render
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsVisible(true)
+        })
+      })
+    } else {
+      setIsVisible(false)
+      setTimeout(() => {
+        setIsAnimating(false)
+      }, 300) // Wait for exit animation
+    }
+  }, [isOpen])
+
+  // Handle exit animation
+  const handleClose = () => {
+    setIsVisible(false)
+    setTimeout(() => {
+      onClose()
+    }, 200) // Match exit animation duration
+  }
+
+  if (!isOpen && !isAnimating) return null
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      onClick={closeOnBackdropClick ? onClose : undefined}
+      className={`fixed inset-0 bg-black/50 flex items-center justify-center p-4 transition-opacity duration-300 motion-reduce:transition-none ${
+        isVisible ? 'opacity-100' : 'opacity-0'
+      }`}
+      style={{ zIndex }}
+      onClick={closeOnBackdropClick ? handleClose : undefined}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
     >
       <div
         ref={modalRef}
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6">
-          {title && (
-            <div className="flex justify-between items-start mb-6">
-              <h2 id="modal-title" className="text-2xl font-bold text-gray-900">
-                {title}
-              </h2>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 rounded"
-                aria-label="Close modal"
-              >
-                <span className="text-2xl" aria-hidden="true">
-                  ✕
-                </span>
-              </button>
-            </div>
-          )}
-          {children}
+        <div
+          ref={contentRef}
+          className={`bg-white rounded-lg shadow-xl transition-all duration-300 motion-reduce:transition-none ${
+            isVisible
+              ? 'opacity-100 scale-100 translate-y-0'
+              : 'opacity-0 scale-95 translate-y-4'
+          }`}
+          style={{ backgroundColor: 'white' }}
+        >
+          <div className="p-6">
+            {title && (
+              <div className="flex justify-between items-start mb-6">
+                <h2 id="modal-title" className="text-2xl font-bold text-gray-900">
+                  {title}
+                </h2>
+                <button
+                  onClick={handleClose}
+                  className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 rounded transition-colors duration-150"
+                  aria-label="Close modal"
+                >
+                  <span className="text-2xl" aria-hidden="true">
+                    ✕
+                  </span>
+                </button>
+              </div>
+            )}
+            {children}
+          </div>
         </div>
       </div>
     </div>
