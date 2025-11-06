@@ -1,12 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
-import { verifyJwt } from '@/lib/auth'
+import { verifyJwt, type UserJwtPayload } from '@/lib/auth'
 import type { Prisma, PaymentStatus } from '@prisma/client'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
-  const session = req.cookies.session ? verifyJwt<any>(req.cookies.session) : null
-  if (session?.type !== 'employee') return res.status(401).json({ error: 'Not authenticated' })
+  const sessionToken = req.cookies.session
+  if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' })
+  
+  const session = verifyJwt<UserJwtPayload>(sessionToken)
+  if (session?.type !== 'employee') {
+    return res.status(401).json({ error: 'Invalid or expired session' })
+  }
 
   // Normalize & validate status filter
   const rawStatus = Array.isArray(req.query.status) ? req.query.status[0] : req.query.status

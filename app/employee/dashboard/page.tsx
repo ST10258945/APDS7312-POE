@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
-import { Alert, LoadingSpinner, Modal, useToast, Button } from '@/app/components'
+import { LoadingSpinner, Modal, useToast, Button } from '@/app/components'
 
 interface Payment {
   id: string
@@ -27,7 +27,6 @@ export default function EmployeeDashboardPage() {
   const toast = useToast()
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'VERIFIED' | 'SUBMITTED'>('ALL')
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
@@ -43,14 +42,14 @@ export default function EmployeeDashboardPage() {
 
   const loadPayments = async () => {
     setLoading(true)
-    setError('')
 
     const response = await api.get<{ payments: Payment[] }>('/api/payments/list')
 
     if (response.ok && response.data) {
       setPayments(response.data.payments || [])
     } else {
-      setError(response.userMessage || response.error || 'Failed to load payments')
+      const errorMessage = response.userMessage || response.error || 'Failed to load payments'
+      toast.error(errorMessage)
       // If unauthorized, redirect to login
       if (response.error?.includes('authenticated') || response.error?.includes('Forbidden')) {
         router.push('/employee/login')
@@ -78,11 +77,21 @@ export default function EmployeeDashboardPage() {
   }
 
   const handleVerify = async (payment: Payment) => {
-    setConfirmModal({ isOpen: true, type: 'verify', payment })
+    // Close Payment Details modal first, then open confirmation modal
+    setSelectedPayment(null)
+    // Small delay to allow modal close animation
+    setTimeout(() => {
+      setConfirmModal({ isOpen: true, type: 'verify', payment })
+    }, 200)
   }
 
   const handleSubmitToSwift = async (payment: Payment) => {
-    setConfirmModal({ isOpen: true, type: 'submit', payment })
+    // Close Payment Details modal first, then open confirmation modal
+    setSelectedPayment(null)
+    // Small delay to allow modal close animation
+    setTimeout(() => {
+      setConfirmModal({ isOpen: true, type: 'submit', payment })
+    }, 200)
   }
 
   const confirmAction = async () => {
@@ -90,7 +99,6 @@ export default function EmployeeDashboardPage() {
 
     const payment = confirmModal.payment
     setActionLoading(true)
-    setError('')
     setConfirmModal({ isOpen: false, type: null, payment: null })
 
     try {
@@ -107,7 +115,7 @@ export default function EmployeeDashboardPage() {
           setSelectedPayment(null)
           await loadPayments()
         } else {
-          setError(response.userMessage || response.error || 'Failed to verify payment')
+          toast.error(response.userMessage || response.error || 'Failed to verify payment')
         }
       } else if (confirmModal.type === 'submit') {
         const actionToken = await requestActionToken('SUBMIT_TO_SWIFT')
@@ -122,11 +130,11 @@ export default function EmployeeDashboardPage() {
           setSelectedPayment(null)
           await loadPayments()
         } else {
-          setError(response.userMessage || response.error || 'Failed to submit to SWIFT')
+          toast.error(response.userMessage || response.error || 'Failed to submit to SWIFT')
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Operation failed')
+      toast.error(err instanceof Error ? err.message : 'Operation failed')
     } finally {
       setActionLoading(false)
     }
@@ -164,7 +172,7 @@ export default function EmployeeDashboardPage() {
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 text-sm text-red-600 hover:text-red-700 font-medium"
+            className="px-4 py-2 text-sm text-red-600 hover:text-red-700 font-medium transition-colors duration-150"
             aria-label="Logout"
           >
             Logout
@@ -173,7 +181,6 @@ export default function EmployeeDashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && <Alert variant="error">{error}</Alert>}
 
         {/* Filters */}
         <div className="mb-6 flex gap-2 flex-wrap">
@@ -195,7 +202,7 @@ export default function EmployeeDashboardPage() {
           <button
             onClick={loadPayments}
             disabled={loading}
-            className="ml-auto px-4 py-2 bg-white text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+            className="ml-auto px-4 py-2 bg-white text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-all duration-150 hover:shadow-sm"
             aria-label="Refresh payments"
           >
             🔄 Refresh
@@ -240,7 +247,7 @@ export default function EmployeeDashboardPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredPayments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50">
+                    <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
                         {payment.transactionId}
                       </td>
@@ -258,7 +265,7 @@ export default function EmployeeDashboardPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-colors duration-300 ${getStatusColor(
                             payment.status
                           )}`}
                         >
@@ -268,7 +275,7 @@ export default function EmployeeDashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                         <button
                           onClick={() => setSelectedPayment(payment)}
-                          className="text-indigo-600 hover:text-indigo-900 font-medium"
+                          className="text-indigo-600 hover:text-indigo-900 font-medium transition-colors duration-150"
                           aria-label={`View payment ${payment.transactionId}`}
                         >
                           View
@@ -348,7 +355,7 @@ export default function EmployeeDashboardPage() {
                 <label className="text-sm font-medium text-gray-500">Status</label>
                 <p className="mt-1">
                   <span
-                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-colors duration-300 ${getStatusColor(
                       selectedPayment.status
                     )}`}
                   >
