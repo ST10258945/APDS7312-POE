@@ -1,0 +1,7 @@
+organization=st10258945
+projectKey=ST10258945_APDS7312-POE
+serverUrl=https://sonarcloud.io
+serverVersion=8.0.0.76360
+dashboardUrl=https://sonarcloud.io/dashboard?id=ST10258945_APDS7312-POE
+ceTaskId=AZpZuN-YwMBnxRYu6ci6
+ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AZpZuN-YwMBnxRYu6ci6

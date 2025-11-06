@@ -2,7 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { verifyJwt, signJwt } from '@/lib/auth'
 import { appendAuditLog } from '@/lib/audit'
 import { rateLimit } from '@/lib/rateLimit'
-import { randomBytes } from 'crypto'
+import { randomBytes } from 'node:crypto'
+import type { Algorithm } from 'jsonwebtoken'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -38,15 +39,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Create jti
     const jti = cryptoRandomString(32)
 
-    // Action token payload: sub = employeeId, action, jti, aud
-    const token = signJwt({
-      iss: 'bank-portal',
-      sub: session.sub,
-      employeeId: session.employeeId ?? session.sub,
-      action,
-      jti,
-      aud: 'action-token'
-    }, { expiresIn: '5m', algorithm: 'HS256' })
+    // Sign the JWT token with action type
+    const token = signJwt(
+      {
+        sub: session.sub,
+        employeeId: session.employeeId ?? session.sub,
+        action,
+        jti
+      },
+      { 
+        type: 'action',
+        algorithm: (process.env.JWT_ALGORITHM as Algorithm | undefined) || 'HS256',
+        // The signJwt function will use '15m' as default for action tokens
+        // If you need to customize this, you can uncomment the line below
+        // and set ACTION_TOKEN_EXPIRY in your .env file
+        // expiresIn: process.env.ACTION_TOKEN_EXPIRY || '15m'
+      }
+    )
 
     // Write audit log with tamper-evident chain for token tracking
     await appendAuditLog({
