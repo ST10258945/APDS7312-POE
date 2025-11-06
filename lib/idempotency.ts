@@ -1,4 +1,4 @@
-import { createHash } from 'crypto'
+import { createHash } from 'node:crypto'
 
 interface Entry<T = unknown> {
   bodyHash: string;
