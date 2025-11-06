@@ -58,7 +58,8 @@ export default function CustomerPaymentsPage() {
           setTimeout(() => router.push('/customer/login'), 2000)
         }
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Customer payment submission error:', error)
       setError('Unable to connect to the server. Please check your connection and try again.')
     } finally {
       setLoading(false)
@@ -212,7 +213,7 @@ export default function CustomerPaymentsPage() {
               <li>Your payment will be reviewed by bank staff</li>
               <li>Staff will verify recipient details and SWIFT code</li>
               <li>Once verified, payment will be submitted to SWIFT</li>
-              <li>You'll be notified once the payment is processed</li>
+              <li>{"You'll be notified once the payment is processed"}</li>
             </ol>
           </div>
         </div>

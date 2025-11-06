@@ -18,6 +18,7 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "coverage/**",
     ],
   },
   {
@@ -35,6 +36,12 @@ const eslintConfig = [
     files: ["scripts/**/*.{js,cjs,mjs}", "scripts/*.{js,cjs,mjs}"],
     rules: {
       "@typescript-eslint/no-var-requires": "off",
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  {
+    files: ["jest.config.*"],
+    rules: {
       "@typescript-eslint/no-require-imports": "off",
     },
   },
