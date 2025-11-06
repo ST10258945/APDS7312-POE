@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
+import { Alert, Button, Input } from '@/app/components'
 
 export default function CustomerLoginPage() {
   const router = useRouter()
@@ -27,18 +28,7 @@ export default function CustomerLoginPage() {
       if (response.ok) {
         router.push('/customer/payments')
       } else {
-        // Map technical errors to user-friendly messages
-        let errorMessage = response.error || 'Login failed'
-        
-        if (errorMessage.includes('CSRF')) {
-          errorMessage = 'Session expired. Please refresh the page and try again.'
-        } else if (errorMessage.includes('credentials') || errorMessage.includes('Invalid')) {
-          errorMessage = 'Invalid username, account number, or password'
-        } else if (errorMessage.includes('Too many')) {
-          errorMessage = 'Too many login attempts. Please try again in a few minutes.'
-        }
-        
-        setError(errorMessage)
+        setError(response.userMessage || response.error || 'Login failed')
       }
     } catch (err) {
       setError('Unable to connect to the server. Please check your connection and try again.')
@@ -58,67 +48,45 @@ export default function CustomerLoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-              {error}
-            </div>
-          )}
+          {error && <Alert variant="error">{error}</Alert>}
 
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
-              placeholder="Enter your username"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="accountNumber" className="block text-sm font-medium text-gray-700 mb-2">
-              Account Number
-            </label>
-            <input
-              id="accountNumber"
-              type="text"
-              value={accountNumber}
-              onChange={(e) => setAccountNumber(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
-              placeholder="8-12 digit account number"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
-              placeholder="Enter your password"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <button
-            type="submit"
+          <Input
+            label="Username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter your username"
+            required
             disabled={loading}
-            className="w-full bg-teal-600 text-white py-2 px-4 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+            id="username"
+          />
+
+          <Input
+            label="Account Number"
+            type="text"
+            value={accountNumber}
+            onChange={(e) => setAccountNumber(e.target.value)}
+            placeholder="8-12 digit account number"
+            helperText="8-12 digit account number"
+            required
+            disabled={loading}
+            id="accountNumber"
+          />
+
+          <Input
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            required
+            disabled={loading}
+            id="password"
+          />
+
+          <Button type="submit" loading={loading} className="w-full">
+            Sign In
+          </Button>
         </form>
 
         <div className="mt-6 text-center">
