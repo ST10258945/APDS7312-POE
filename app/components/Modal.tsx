@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, ReactNode, useState } from 'react'
+import { useEffect, useRef, ReactNode, useState, useCallback } from 'react'
 
 interface ModalProps {
   isOpen: boolean
@@ -33,6 +33,24 @@ export function Modal({
   // Calculate z-index based on stacking level
   const zIndex = stacking === 0 ? 50 : stacking === 1 ? 60 : 70
 
+  const focusFirstElement = useCallback(() => {
+    const modal = modalRef.current
+    if (!modal) return
+
+    const focusableElements = modal.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    const firstElement = focusableElements[0]
+    firstElement?.focus()
+  }, [])
+
+  const handleClose = useCallback(() => {
+    setIsVisible(false)
+    window.setTimeout(() => {
+      onClose()
+    }, 200)
+  }, [onClose])
+
   // Handle Escape key
   useEffect(() => {
     if (!isOpen || !closeOnEscape) return
@@ -45,7 +63,7 @@ export function Modal({
 
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, closeOnEscape])
+  }, [isOpen, closeOnEscape, handleClose])
 
   // Focus trap
   useEffect(() => {
@@ -56,50 +74,43 @@ export function Modal({
 
     // Focus modal with slight delay for animation
     const modal = modalRef.current
-    if (modal) {
-      setTimeout(() => {
-        const focusableElements = modal.querySelectorAll<HTMLElement>(
+    if (!modal) return
+
+    const timer = window.setTimeout(focusFirstElement, 100)
+
+    // Trap focus within modal
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+
+      const focusableArray = Array.from(
+        modal.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         )
-        const firstElement = focusableElements[0]
-        if (firstElement) {
-          firstElement.focus()
+      )
+      if (focusableArray.length === 0) return
+
+      const first = focusableArray[0]
+      const last = focusableArray[focusableArray.length - 1]
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault()
+          last?.focus()
         }
-      }, 100)
-
-      // Trap focus within modal
-      const handleTab = (e: KeyboardEvent) => {
-        if (e.key !== 'Tab') return
-
-        const focusableArray = Array.from(
-          modal.querySelectorAll<HTMLElement>(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-          )
-        )
-        const first = focusableArray[0]
-        const last = focusableArray[focusableArray.length - 1]
-
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault()
-            last?.focus()
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault()
-            first?.focus()
-          }
-        }
-      }
-
-      modal.addEventListener('keydown', handleTab)
-      return () => {
-        modal.removeEventListener('keydown', handleTab)
-        // Restore previous focus
-        previousFocusRef.current?.focus()
+      } else if (document.activeElement === last) {
+        e.preventDefault()
+        first?.focus()
       }
     }
-  }, [isOpen])
+
+    modal.addEventListener('keydown', handleTab)
+    return () => {
+      window.clearTimeout(timer)
+      modal.removeEventListener('keydown', handleTab)
+      // Restore previous focus
+      previousFocusRef.current?.focus()
+    }
+  }, [isOpen, focusFirstElement])
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -133,13 +144,6 @@ export function Modal({
   }, [isOpen])
 
   // Handle exit animation
-  const handleClose = () => {
-    setIsVisible(false)
-    setTimeout(() => {
-      onClose()
-    }, 200) // Match exit animation duration
-  }
-
   if (!isOpen && !isAnimating) return null
 
   return (
@@ -149,6 +153,14 @@ export function Modal({
       }`}
       style={{ zIndex }}
       onClick={closeOnBackdropClick ? handleClose : undefined}
+      onKeyDown={(e) => {
+        if (!closeOnBackdropClick) return
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleClose()
+        }
+      }}
+      tabIndex={closeOnBackdropClick ? 0 : -1}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}

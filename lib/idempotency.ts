@@ -1,6 +1,12 @@
-import { createHash } from 'node:crypto'
+import { createHash } from 'crypto'
 
-type Entry<T = unknown> = { bodyHash: string; expiresAt: number; responseJson?: T }
+interface Entry<T = unknown> {
+  bodyHash: string;
+  expiresAt: number;
+  responseJson?: T;
+}
+
+type WriteFunction<T> = (responseJson: T) => void;
 
 // Persist across HMR / multi-workers in dev:
 const g = globalThis as unknown as { __idemStore?: Map<string, Entry> }
@@ -13,7 +19,11 @@ function sha256(input: string) {
   return createHash('sha256').update(input).digest('hex')
 }
 
-export function rememberRequest<T = unknown>(key: string, route: string, body: unknown): { hit: Entry<T> | null; write: (responseJson: T) => void } {
+export function rememberRequest<T = unknown>(
+  key: string, 
+  route: string, 
+  body: unknown
+): { hit: Entry<T> | null; write: WriteFunction<T> } {
   const now = Date.now()
   // cleanup occasionally
   for (const [k, v] of store) if (v.expiresAt < now) store.delete(k)
@@ -21,7 +31,7 @@ export function rememberRequest<T = unknown>(key: string, route: string, body: u
   const fullKey = `${route}:${key}`
   const hash = sha256(typeof body === 'string' ? body : JSON.stringify(body ?? {}))
   const existing = store.get(fullKey)
-  const hit = existing?.bodyHash === hash ? existing as Entry<T> : null;
+  const hit = existing?.bodyHash === hash ? (existing as Entry<T>) : null;
   
   return {
     hit,

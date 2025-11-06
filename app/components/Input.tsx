@@ -1,6 +1,6 @@
 'use client'
 
-import { InputHTMLAttributes, ReactNode } from 'react'
+import { InputHTMLAttributes } from 'react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -21,7 +21,8 @@ export function Input({
   id,
   ...props
 }: InputProps) {
-  const inputId = id || `input-${label?.toLowerCase().replace(/\s+/g, '-')}`
+  const normalizedLabel = label?.toLowerCase().replaceAll(/\s+/g, '-')
+  const inputId = id || (normalizedLabel ? `input-${normalizedLabel}` : undefined)
   const errorStyles = error
     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
     : 'border-gray-300 focus:ring-teal-500 focus:border-teal-500'

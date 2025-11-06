@@ -3,7 +3,12 @@ import { signJwt } from './auth'
 import { serialize } from 'cookie'
 import type { SignOptions } from 'jsonwebtoken'
 
-type JwtPayload = Record<string, any>
+type JwtPayload = {
+  sub?: string
+  iss?: string | string[]
+  aud?: string | string[]
+  [key: string]: unknown
+}
 
 /** Minimal parser: supports "30m", "8h", "1d", numeric seconds, or "1800" */
 function parseDurationToSeconds(input: SignOptions['expiresIn']): number {
@@ -35,9 +40,20 @@ export function issueSessionCookie(
 
   const maxAge = opts?.maxAgeSeconds ?? parseDurationToSeconds(ttl)
 
+  const { iss: payloadIss, aud: payloadAud, ...sessionPayload } = payload
+
+  const issuerOption = Array.isArray(payloadIss) ? payloadIss[0] : payloadIss
+  const audienceOption = payloadAud
+
   const token = signJwt(
-    { iss: 'bank-portal', aud: 'app', ...payload },
-    { expiresIn: ttl, algorithm: 'HS256' }
+    sessionPayload,
+    {
+      type: 'user',
+      expiresIn: ttl,
+      algorithm: 'HS256',
+      ...(issuerOption ? { issuer: issuerOption } : {}),
+      ...(audienceOption ? { audience: audienceOption } : {}),
+    }
   )
 
   res.setHeader(
