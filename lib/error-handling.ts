@@ -15,7 +15,7 @@ export interface ErrorMapping {
 /**
  * Maps technical error messages to user-friendly messages
  */
-export function mapErrorToUserMessage(error: string | Error | unknown): ErrorMapping {
+export function mapErrorToUserMessage(error: unknown): ErrorMapping {
   const errorMessage = error instanceof Error ? error.message : String(error)
   const lowerMessage = errorMessage.toLowerCase()
 

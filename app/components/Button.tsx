@@ -44,7 +44,7 @@ export function Button({
   className = '',
   portal = 'customer',
   ...props
-}: ButtonProps) {
+}: Readonly<ButtonProps>) {
   const baseStyles =
     'font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none'
   const styles =
