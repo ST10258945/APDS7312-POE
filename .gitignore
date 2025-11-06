@@ -30,8 +30,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# local env files
+.env*.local
 
 # vercel
 .vercel
@@ -40,9 +40,28 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# windsurf
+# Windsurf
+.windsurf/*
+!.windsurf/workflows/
+!.windsurf/workflows/**
+
+
+# OpenSpec - local development only
+# OpenSpec
+/openspec/**
+!/openspec/specs/
+!/openspec/specs/**/*.md
+/openspec/changes/**
+
 /app/generated/prisma
 
 # SSL certificates (development)
 certs/
 *.crt
 *.key
+
+
+
+# Cursor IDE files
+.cursor/

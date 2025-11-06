@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { randomBytes } from 'node:crypto'
+import { randomBytes } from 'crypto'
 import { serialize } from 'cookie'
 
 export default function handler(_req: NextApiRequest, res: NextApiResponse) {
