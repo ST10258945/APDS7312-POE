@@ -20,7 +20,7 @@ export default function CustomerRegisterPage() {
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -37,7 +37,8 @@ export default function CustomerRegisterPage() {
       } else {
         setError(response.userMessage || response.error || 'Registration failed')
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Customer registration error:', error)
       setError('Unable to connect to the server. Please check your connection and try again.')
     } finally {
       setLoading(false)

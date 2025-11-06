@@ -28,7 +28,8 @@ export default function EmployeeLoginPage() {
       } else {
         setError(response.userMessage || response.error || 'Login failed')
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Employee login error:', error)
       setError('Unable to connect to the server. Please check your connection and try again.')
     } finally {
       setLoading(false)
