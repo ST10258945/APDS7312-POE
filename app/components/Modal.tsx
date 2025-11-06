@@ -23,7 +23,7 @@ export function Modal({
   closeOnBackdropClick = true,
   closeOnEscape = true,
   stacking = 0,
-}: ModalProps) {
+}: Readonly<ModalProps>) {
   const modalRef = useRef<HTMLDialogElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
@@ -50,7 +50,7 @@ export function Modal({
 
   const handleClose = useCallback(() => {
     setIsVisible(false)
-    window.setTimeout(() => {
+    globalThis.setTimeout(() => {
       onClose()
     }, 200)
   }, [onClose])
@@ -80,7 +80,7 @@ export function Modal({
     const modal = modalRef.current
     if (!modal) return
 
-    const timer = window.setTimeout(focusFirstElement, 100)
+    const timer = globalThis.setTimeout(focusFirstElement, 100)
 
     // Trap focus within modal
     const handleTab = (e: KeyboardEvent) => {
@@ -94,7 +94,7 @@ export function Modal({
       if (focusableArray.length === 0) return
 
       const first = focusableArray[0]
-      const last = focusableArray[focusableArray.length - 1]
+      const last = focusableArray.at(-1)
 
       if (e.shiftKey) {
         if (document.activeElement === first) {
@@ -109,7 +109,7 @@ export function Modal({
 
     modal.addEventListener('keydown', handleTab)
     return () => {
-      window.clearTimeout(timer)
+      globalThis.clearTimeout(timer)
       modal.removeEventListener('keydown', handleTab)
       // Restore previous focus
       previousFocusRef.current?.focus()
@@ -163,7 +163,7 @@ export function Modal({
       })
     } else {
       setIsVisible(false)
-      setTimeout(() => {
+      globalThis.setTimeout(() => {
         setIsAnimating(false)
       }, 300) // Wait for exit animation
     }

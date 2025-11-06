@@ -35,7 +35,7 @@ export function Alert({
   dismissible = false,
   onDismiss,
   className = '',
-}: AlertProps) {
+}: Readonly<AlertProps>) {
   const baseStyles = 'border px-4 py-3 rounded-md text-sm flex items-start gap-2'
   const styles = `${baseStyles} ${variantStyles[variant]} ${className}`
 
