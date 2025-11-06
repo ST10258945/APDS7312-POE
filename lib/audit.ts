@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { createHash } from 'node:crypto'
+import { createHash } from 'crypto'
 
 type LogInput = {
   entityType: string

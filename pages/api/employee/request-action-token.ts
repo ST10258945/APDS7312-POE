@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { verifyJwt, signJwt } from '@/lib/auth'
 import { appendAuditLog } from '@/lib/audit'
 import { rateLimit } from '@/lib/rateLimit'
-import { randomBytes } from 'node:crypto'
+import { randomBytes } from 'crypto'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Write audit log with tamper-evident chain for token tracking
     await appendAuditLog({
       entityType: 'Employee',
-      entityId: session.sub,
+      entityId: session.sub as string,
       action: 'ACTION_TOKEN_ISSUED',
       ipAddress: firstXff ?? req.socket.remoteAddress ?? null,
       userAgent: req.headers['user-agent'] || null,
