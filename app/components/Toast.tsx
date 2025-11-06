@@ -18,7 +18,7 @@ interface ToastContainerProps {
 /**
  * Toast notification container
  */
-export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
+export function ToastContainer({ toasts, onDismiss }: Readonly<ToastContainerProps>) {
   if (toasts.length === 0) return null
 
   return (
@@ -42,7 +42,7 @@ interface ToastItemProps {
   onDismiss: (id: string) => void
 }
 
-function ToastItem({ toast, onDismiss }: ToastItemProps) {
+function ToastItem({ toast, onDismiss }: Readonly<ToastItemProps>) {
   const [isVisible, setIsVisible] = useState(true)
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([])
 
   const generateId = () => {
-    const webCrypto = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined
+    const webCrypto = typeof globalThis === 'object' && globalThis.crypto ? globalThis.crypto : undefined
     if (webCrypto?.randomUUID) {
       return webCrypto.randomUUID()
     }
