@@ -1,10 +1,13 @@
 // lib/api-client.ts
 // Shared API client for making authenticated requests with CSRF protection
 
+import { mapErrorToUserMessage } from './error-handling'
+
 export interface ApiResponse<T = any> {
   ok: boolean
   data?: T
   error?: string
+  userMessage?: string
 }
 
 /**
@@ -73,9 +76,12 @@ export async function apiRequest<T = any>(
     }
 
     if (!res.ok) {
+      const errorMessage = data.error || data.message || `Request failed with status ${res.status}`
+      const errorMapping = mapErrorToUserMessage(errorMessage)
       return {
         ok: false,
-        error: data.error || data.message || `Request failed with status ${res.status}`,
+        error: errorMessage,
+        userMessage: errorMapping.userMessage,
       }
     }
 
@@ -85,9 +91,11 @@ export async function apiRequest<T = any>(
     }
   } catch (error) {
     console.error('API request error:', error)
+    const errorMapping = mapErrorToUserMessage(error)
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Network error',
+      userMessage: errorMapping.userMessage,
     }
   }
 }
