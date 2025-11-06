@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-const { createHash } = require('node:crypto');
+const { createHash } = require('crypto');
 
 const prisma = new PrismaClient();
 

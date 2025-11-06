@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { createHash } from 'node:crypto';
+import { createHash } from 'crypto';
 
 const prisma = new PrismaClient();
 
