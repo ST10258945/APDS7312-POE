@@ -24,14 +24,15 @@ export function Modal({
   closeOnEscape = true,
   stacking = 0,
 }: ModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null)
+  const modalRef = useRef<HTMLDialogElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
 
   // Calculate z-index based on stacking level
-  const zIndex = stacking === 0 ? 50 : stacking === 1 ? 60 : 70
+  const zIndexLevels = [50, 60, 70]
+  const zIndex = zIndexLevels[Math.min(Math.max(stacking, 0), zIndexLevels.length - 1)]
 
   const focusFirstElement = useCallback(() => {
     const modal = modalRef.current
@@ -177,13 +178,13 @@ export function Modal({
       }`}
       style={{ zIndex }}
     >
-      <div
+      <dialog
         ref={modalRef}
         className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
         tabIndex={-1}
+        open
       >
         <div
           ref={contentRef}
@@ -214,7 +215,7 @@ export function Modal({
             {children}
           </div>
         </div>
-      </div>
+      </dialog>
     </div>
   )
 }

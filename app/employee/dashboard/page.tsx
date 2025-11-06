@@ -162,6 +162,128 @@ export default function EmployeeDashboardPage() {
     }
   }
 
+  const renderPaymentsSection = () => {
+    if (loading) {
+      return <LoadingSpinner text="Loading payments..." />
+    }
+
+    if (filteredPayments.length === 0) {
+      return (
+        <div className="text-center py-12 bg-white rounded-lg shadow">
+          <p className="text-gray-600">No payments found</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Transaction ID
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Recipient
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  SWIFT Code
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredPayments.map((payment) => (
+                <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                    {payment.transactionId}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {payment.customer?.fullName || 'Unknown'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {payment.currency} {payment.amount}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {payment.recipientName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                    {payment.swiftCode}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-colors duration-300 ${getStatusColor(
+                        payment.status
+                      )}`}
+                    >
+                      {payment.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                    <button
+                      onClick={() => setSelectedPayment(payment)}
+                      className="text-indigo-600 hover:text-indigo-900 font-medium transition-colors duration-150"
+                      aria-label={`View payment ${payment.transactionId}`}
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  const getConfirmModalTitle = () => {
+    if (confirmModal.type === 'verify') {
+      return 'Verify Payment'
+    }
+    if (confirmModal.type === 'submit') {
+      return 'Submit to SWIFT'
+    }
+    return 'Confirm Action'
+  }
+
+  const getConfirmModalBody = () => {
+    if (!confirmModal.payment) {
+      return null
+    }
+
+    if (confirmModal.type === 'verify') {
+      return (
+        <>
+          Verify payment of <strong>{confirmModal.payment.currency} {confirmModal.payment.amount}</strong> to{' '}
+          <strong>{confirmModal.payment.recipientName}</strong>?
+        </>
+      )
+    }
+
+    if (confirmModal.type === 'submit') {
+      return (
+        <>
+          Submit payment <strong>{confirmModal.payment.transactionId}</strong> to SWIFT for processing?
+        </>
+      )
+    }
+
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {toast.ToastContainer()}
@@ -212,112 +334,19 @@ export default function EmployeeDashboardPage() {
         </div>
 
         {/* Payment List */}
-        {loading ? (
-          <LoadingSpinner text="Loading payments..." />
-        ) : filteredPayments.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <p className="text-gray-600">No payments found</p>
-          </div>
-        ) : (
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Transaction ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Recipient
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      SWIFT Code
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPayments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                        {payment.transactionId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.customer?.fullName || 'Unknown'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.currency} {payment.amount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.recipientName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                        {payment.swiftCode}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-colors duration-300 ${getStatusColor(
-                            payment.status
-                          )}`}
-                        >
-                          {payment.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                        <button
-                          onClick={() => setSelectedPayment(payment)}
-                          className="text-indigo-600 hover:text-indigo-900 font-medium transition-colors duration-150"
-                          aria-label={`View payment ${payment.transactionId}`}
-                        >
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        {renderPaymentsSection()}
       </main>
 
       {/* Confirmation Modal */}
       <Modal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal({ isOpen: false, type: null, payment: null })}
-        title={
-          confirmModal.type === 'verify'
-            ? 'Verify Payment'
-            : confirmModal.type === 'submit'
-            ? 'Submit to SWIFT'
-            : 'Confirm Action'
-        }
+        title={getConfirmModalTitle()}
       >
         {confirmModal.payment && (
           <div className="space-y-4">
             <p className="text-gray-700">
-              {confirmModal.type === 'verify' && (
-                <>
-                  Verify payment of <strong>{confirmModal.payment.currency} {confirmModal.payment.amount}</strong> to{' '}
-                  <strong>{confirmModal.payment.recipientName}</strong>?
-                </>
-              )}
-              {confirmModal.type === 'submit' && (
-                <>
-                  Submit payment <strong>{confirmModal.payment.transactionId}</strong> to SWIFT for processing?
-                </>
-              )}
+              {getConfirmModalBody()}
             </p>
             <div className="flex gap-3 justify-end">
               <Button
