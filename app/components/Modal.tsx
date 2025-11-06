@@ -42,6 +42,9 @@ export function Modal({
     )
     const firstElement = focusableElements[0]
     firstElement?.focus()
+    if (!firstElement) {
+      modal.focus()
+    }
   }, [])
 
   const handleClose = useCallback(() => {
@@ -124,6 +127,28 @@ export function Modal({
     }
   }, [isOpen])
 
+  useEffect(() => {
+    if (!isOpen || !closeOnBackdropClick) return
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const modalNode = modalRef.current
+      if (!modalNode) return
+
+      const target = event.target as Node | null
+      if (target && modalNode.contains(target)) return
+
+      handleClose()
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('touchstart', handlePointerDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('touchstart', handlePointerDown)
+    }
+  }, [isOpen, closeOnBackdropClick, handleClose])
+
   // Handle entrance animation
   useEffect(() => {
     if (isOpen) {
@@ -143,16 +168,6 @@ export function Modal({
     }
   }, [isOpen])
 
-  const handleBackdropClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      if (!closeOnBackdropClick) return
-      if (event.target === event.currentTarget) {
-        handleClose()
-      }
-    },
-    [closeOnBackdropClick, handleClose]
-  )
-
   if (!isOpen && !isAnimating) return null
 
   return (
@@ -161,22 +176,14 @@ export function Modal({
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{ zIndex }}
-      onClick={handleBackdropClick}
-      onKeyDown={(e) => {
-        if (!closeOnBackdropClick) return
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          handleClose()
-        }
-      }}
-      tabIndex={closeOnBackdropClick ? 0 : -1}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={title ? 'modal-title' : undefined}
     >
       <div
         ref={modalRef}
         className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+        tabIndex={-1}
       >
         <div
           ref={contentRef}

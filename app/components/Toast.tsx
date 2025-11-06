@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Alert, AlertVariant } from './Alert'
 
 export interface Toast {
@@ -68,6 +68,8 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
   )
 }
 
+let toastCounter = 0
+
 /**
  * Toast hook for managing toasts
  */
@@ -86,7 +88,10 @@ export function useToast() {
         .map((segment) => segment.toString(36).padStart(8, '0'))
         .join('-')
     }
-    return Math.random().toString(36).slice(2, 11)
+    toastCounter = (toastCounter + 1) % Number.MAX_SAFE_INTEGER
+    const timestamp = Date.now().toString(36)
+    const counterSegment = toastCounter.toString(36).padStart(6, '0')
+    return `toast-${timestamp}-${counterSegment}`
   }
 
   const showToast = (variant: AlertVariant, message: string, duration?: number) => {
