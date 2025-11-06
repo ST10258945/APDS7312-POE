@@ -46,7 +46,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    'font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+    'font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none'
   const styles =
     portal === 'employee' && variant === 'primary'
       ? `${baseStyles} ${employeeButtonStyles[variant]} ${sizeStyles[size]} ${className}`
@@ -55,7 +55,7 @@ export function Button({
   return (
     <button className={styles} disabled={disabled || loading} {...props}>
       {loading ? (
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2 animate-in fade-in duration-200">
           <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
           <span>Processing...</span>
         </span>

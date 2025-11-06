@@ -23,7 +23,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
 
   return (
     <div
-      className="fixed top-4 right-4 z-50 space-y-2 max-w-md w-full"
+      className="fixed top-4 right-4 z-[60] space-y-2 max-w-md w-full"
       role="region"
       aria-live="polite"
       aria-label="Notifications"
@@ -57,7 +57,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
 
   return (
     <div
-      className={`transform transition-all duration-300 ${
+      className={`transform transition-all duration-300 motion-reduce:transition-none ${
         isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
     >
