@@ -30,7 +30,8 @@ export default function CustomerLoginPage() {
       } else {
         setError(response.userMessage || response.error || 'Login failed')
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Customer login error:', error)
       setError('Unable to connect to the server. Please check your connection and try again.')
     } finally {
       setLoading(false)
@@ -91,7 +92,7 @@ export default function CustomerLoginPage() {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <a href="/customer/register" className="text-teal-600 hover:text-teal-700 font-medium">
               Register here
             </a>

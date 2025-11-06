@@ -3,7 +3,7 @@
 
 import { mapErrorToUserMessage } from './error-handling'
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   ok: boolean
   data?: T
   error?: string
@@ -28,7 +28,7 @@ export async function fetchCsrfToken(): Promise<string> {
 /**
  * Make an authenticated API request with CSRF protection
  */
-export async function apiRequest<T = any>(
+export async function apiRequest<T = unknown>(
   url: string,
   options: RequestInit & { requireCsrf?: boolean } = {}
 ): Promise<ApiResponse<T>> {
@@ -36,16 +36,16 @@ export async function apiRequest<T = any>(
 
   try {
     // Get CSRF token for mutation requests
-    let headers = { ...fetchOptions.headers } as Record<string, string>
-    
+    const headers = new Headers(fetchOptions.headers as HeadersInit | undefined)
+
     if (requireCsrf) {
       const csrfToken = await fetchCsrfToken()
-      headers['x-csrf-token'] = csrfToken
+      headers.set('x-csrf-token', csrfToken)
     }
 
     // Ensure JSON content type for POST/PUT/PATCH
     if (fetchOptions.body && typeof fetchOptions.body === 'string') {
-      headers['Content-Type'] = 'application/json'
+      headers.set('Content-Type', 'application/json')
     }
 
     const res = await fetch(url, {
@@ -55,14 +55,13 @@ export async function apiRequest<T = any>(
     })
 
     // Try to parse JSON, handle non-JSON responses
-    let data: any
+    let data: unknown
     const contentType = res.headers.get('content-type')
     
     if (contentType?.includes('application/json')) {
       try {
-        data = await res.json()
-      } catch (e) {
-        // If JSON parsing fails, return text
+        data = (await res.json()) as unknown
+      } catch {
         const text = await res.text()
         return {
           ok: false,
@@ -70,13 +69,13 @@ export async function apiRequest<T = any>(
         }
       }
     } else {
-      // Non-JSON response
       const text = await res.text()
       data = { message: text }
     }
 
     if (!res.ok) {
-      const errorMessage = data.error || data.message || `Request failed with status ${res.status}`
+      const body = data as { error?: string; message?: string } | undefined
+      const errorMessage = body?.error || body?.message || `Request failed with status ${res.status}`
       const errorMapping = mapErrorToUserMessage(errorMessage)
       return {
         ok: false,
@@ -87,7 +86,7 @@ export async function apiRequest<T = any>(
 
     return {
       ok: true,
-      data,
+      data: data as T,
     }
   } catch (error) {
     console.error('API request error:', error)
@@ -104,23 +103,23 @@ export async function apiRequest<T = any>(
  * Convenience methods for common HTTP verbs
  */
 export const api = {
-  get: <T = any>(url: string) => apiRequest<T>(url, { method: 'GET' }),
-  
-  post: <T = any>(url: string, body: any, requireCsrf = true) =>
+  get: <T = unknown>(url: string) => apiRequest<T>(url, { method: 'GET' }),
+
+  post: <T = unknown, TBody = unknown>(url: string, body: TBody, requireCsrf = true) =>
     apiRequest<T>(url, {
       method: 'POST',
       body: JSON.stringify(body),
       requireCsrf,
     }),
-  
-  put: <T = any>(url: string, body: any, requireCsrf = true) =>
+
+  put: <T = unknown, TBody = unknown>(url: string, body: TBody, requireCsrf = true) =>
     apiRequest<T>(url, {
       method: 'PUT',
       body: JSON.stringify(body),
       requireCsrf,
     }),
-  
-  delete: <T = any>(url: string, requireCsrf = true) =>
+
+  delete: <T = unknown>(url: string, requireCsrf = true) =>
     apiRequest<T>(url, {
       method: 'DELETE',
       requireCsrf,
