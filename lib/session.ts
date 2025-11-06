@@ -5,6 +5,8 @@ import type { SignOptions } from 'jsonwebtoken'
 
 type JwtPayload = {
   sub?: string
+  iss?: string | string[]
+  aud?: string | string[]
   [key: string]: unknown
 }
 
@@ -40,14 +42,17 @@ export function issueSessionCookie(
 
   const { iss: payloadIss, aud: payloadAud, ...sessionPayload } = payload
 
+  const issuerOption = Array.isArray(payloadIss) ? payloadIss[0] : payloadIss
+  const audienceOption = payloadAud
+
   const token = signJwt(
     sessionPayload,
     {
       type: 'user',
       expiresIn: ttl,
       algorithm: 'HS256',
-      ...(payloadIss ? { issuer: payloadIss } : {}),
-      ...(payloadAud ? { audience: payloadAud } : {}),
+      ...(issuerOption ? { issuer: issuerOption } : {}),
+      ...(audienceOption ? { audience: audienceOption } : {}),
     }
   )
 

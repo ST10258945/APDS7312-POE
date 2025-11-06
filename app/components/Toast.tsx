@@ -74,8 +74,23 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
 export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([])
 
+  const generateId = () => {
+    const webCrypto = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined
+    if (webCrypto?.randomUUID) {
+      return webCrypto.randomUUID()
+    }
+    if (webCrypto?.getRandomValues) {
+      const buffer = new Uint32Array(2)
+      webCrypto.getRandomValues(buffer)
+      return Array.from(buffer)
+        .map((segment) => segment.toString(36).padStart(8, '0'))
+        .join('-')
+    }
+    return Math.random().toString(36).slice(2, 11)
+  }
+
   const showToast = (variant: AlertVariant, message: string, duration?: number) => {
-    const id = Math.random().toString(36).substr(2, 9)
+    const id = generateId()
     setToasts((prev) => [...prev, { id, variant, message, duration }])
     return id
   }
