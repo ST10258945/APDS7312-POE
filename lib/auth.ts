@@ -2,7 +2,38 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
 const ROUNDS = Number.parseInt(process.env.BCRYPT_ROUNDS ?? '12', 10)
-const JWT_SECRET = process.env.JWT_SECRET!
+
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set')
+}
+
+const JWT_SECRET = process.env.JWT_SECRET
+
+// JWT Payload Types
+export interface BaseJwtPayload {
+  iss: string
+  aud: string
+  iat: number
+  exp: number
+  [key: string]: unknown
+}
+
+export interface UserJwtPayload extends BaseJwtPayload {
+  sub: string
+  type: 'user' | 'employee' | 'customer'
+  email: string
+  role?: string
+  employeeId?: string
+}
+
+export interface ActionJwtPayload extends BaseJwtPayload {
+  sub: string
+  action: string
+  jti?: string
+}
+
+// Union type for all possible JWT payloads
+export type JwtPayload = UserJwtPayload | ActionJwtPayload
 
 export async function hashPassword(p: string) {
   return bcrypt.hash(p, ROUNDS)
@@ -12,24 +43,62 @@ export async function verifyPassword(p: string, h: string) {
 }
 
 // signJwt now accepts standard jwt.SignOptions
-export function signJwt(payload: object, opts?: jwt.SignOptions) {
-  const base: jwt.SignOptions = { algorithm: 'HS256', expiresIn: '1h' }
-  const options = opts ? { ...base, ...opts } : base
-  return jwt.sign({ iss: 'bank-portal', aud: 'app', ...payload }, JWT_SECRET, options)
+/**
+ * Signs a JWT token with the given payload and options
+ * @param payload The payload to sign
+ * @param options JWT sign options
+ * @returns Signed JWT token
+ */
+export function signJwt<T extends object>(
+  payload: Omit<T, 'iss' | 'aud' | 'iat' | 'exp'>,
+  options: jwt.SignOptions & { type?: 'user' | 'action' } = {}
+): string {
+  const { type = 'user', ...signOptions } = options
+  
+  const baseOptions: jwt.SignOptions = { 
+    algorithm: 'HS256', 
+    expiresIn: type === 'action' ? '15m' : '1h',
+    issuer: 'bank-portal',
+    audience: type === 'action' ? 'action-token' : 'app'
+  }
+  
+  return jwt.sign(
+    payload,
+    JWT_SECRET,
+    { ...baseOptions, ...signOptions }
+  )
 }
 
-/** Safe verify that returns null on failure instead of throwing */
-export function verifyJwt<T = any>(token: string,
-  expect?: { aud?: string; iss?: string }
+/**
+ * Verifies a JWT token and returns its payload
+ * @param token The JWT token to verify
+ * @param options Options for verification including expected audience and issuer
+ * @returns The decoded token payload or null if verification fails
+ */
+export function verifyJwt<T extends BaseJwtPayload>(
+  token: string,
+  options: { aud?: string; iss?: string } = {}
 ): T | null {
-  const safeExpect = expect ?? { aud: 'app', iss: 'bank-portal' };
+  const { aud = 'app', iss = 'bank-portal' } = options;
+  
   try {
-    return jwt.verify(token, JWT_SECRET, {
+    const payload = jwt.verify(token, JWT_SECRET, {
       algorithms: ['HS256'],
-      audience: safeExpect.aud,
-      issuer: safeExpect.iss,
+      audience: aud,
+      issuer: iss,
     }) as T;
-  } catch {
+
+    // Additional runtime type checking
+    if (!payload?.sub || !payload.iat || !payload.exp) {
+      console.warn('JWT payload missing required fields');
+      return null;
+    }
+
+    return payload;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn(`JWT verification failed: ${error.message}`);
+    }
     return null;
   }
 }

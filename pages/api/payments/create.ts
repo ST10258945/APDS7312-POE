@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
-import { verifyJwt } from '@/lib/auth'
+import { verifyJwt, type UserJwtPayload } from '@/lib/auth'
 import { appendAuditLog } from '@/lib/audit'
 import { rememberRequest } from '@/lib/idempotency'
 import { randomUUID } from 'node:crypto'
@@ -38,10 +38,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // Verify JWT token and extract customer information
     const sessionToken = req.cookies.session
-    const session = sessionToken ? verifyJwt<any>(sessionToken) : null
-    if (session?.type !== 'customer') {
+    if (!sessionToken) {
       return res.status(401).json({ error: 'Not authenticated' })
     }
+    
+    const session = verifyJwt<UserJwtPayload>(sessionToken)
+    if (session?.type !== 'customer') {
+      return res.status(401).json({ error: 'Invalid or expired session' })
+    }
+    
     const customerId = session.sub
 
     // Verify JWT/session (already done)
