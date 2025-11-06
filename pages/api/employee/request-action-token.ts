@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { verifyJwt, signJwt } from '@/lib/auth'
 import { appendAuditLog } from '@/lib/audit'
 import { rateLimit } from '@/lib/rateLimit'
-import { randomBytes } from 'node:crypto'
+import { randomBytes } from 'crypto'
 import type { Algorithm } from 'jsonwebtoken'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
