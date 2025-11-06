@@ -348,11 +348,11 @@ export default function EmployeeDashboardPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Transaction ID</label>
+                <p className="text-sm font-medium text-gray-500">Transaction ID</p>
                 <p className="mt-1 text-sm text-gray-900 font-mono">{selectedPayment.transactionId}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Status</label>
+                <p className="text-sm font-medium text-gray-500">Status</p>
                 <p className="mt-1">
                   <span
                     className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-colors duration-300 ${getStatusColor(
@@ -367,13 +367,13 @@ export default function EmployeeDashboardPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Amount</label>
+                <p className="text-sm font-medium text-gray-500">Amount</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900">
                   {selectedPayment.currency} {selectedPayment.amount}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Created</label>
+                <p className="text-sm font-medium text-gray-500">Created</p>
                 <p className="mt-1 text-sm text-gray-900">
                   {new Date(selectedPayment.createdAt).toLocaleString()}
                 </p>
@@ -383,7 +383,7 @@ export default function EmployeeDashboardPage() {
             <hr />
 
             <div>
-              <label className="text-sm font-medium text-gray-500">Customer</label>
+              <p className="text-sm font-medium text-gray-500">Customer</p>
               <p className="mt-1 text-sm text-gray-900">{selectedPayment.customer?.fullName}</p>
               <p className="text-xs text-gray-600">{selectedPayment.customer?.email}</p>
             </div>
@@ -391,23 +391,23 @@ export default function EmployeeDashboardPage() {
             <hr />
 
             <div>
-              <label className="text-sm font-medium text-gray-500">Recipient Name</label>
+              <p className="text-sm font-medium text-gray-500">Recipient Name</p>
               <p className="mt-1 text-sm text-gray-900">{selectedPayment.recipientName}</p>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-500">Recipient Account</label>
+              <p className="text-sm font-medium text-gray-500">Recipient Account</p>
               <p className="mt-1 text-sm text-gray-900 font-mono">{selectedPayment.recipientAccount}</p>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-500">SWIFT Code</label>
+              <p className="text-sm font-medium text-gray-500">SWIFT Code</p>
               <p className="mt-1 text-sm text-gray-900 font-mono">{selectedPayment.swiftCode}</p>
             </div>
 
             {selectedPayment.paymentReference && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Payment Reference</label>
+                <p className="text-sm font-medium text-gray-500">Payment Reference</p>
                 <p className="mt-1 text-sm text-gray-900">{selectedPayment.paymentReference}</p>
               </div>
             )}
