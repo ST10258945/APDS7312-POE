@@ -15,16 +15,22 @@ const sizeClasses = {
 /**
  * LoadingSpinner component with consistent styling
  */
-export function LoadingSpinner({ size = 'md', text, className = '' }: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 'md', text, className = '' }: Readonly<LoadingSpinnerProps>) {
+  const label = text || 'Loading'
+
   return (
     <div className={`flex flex-col items-center justify-center gap-2 ${className}`}>
-      <div
-        className={`inline-block animate-spin rounded-full border-b-2 border-current ${sizeClasses[size]}`}
-        role="status"
-        aria-label="Loading"
+      <output
+        className="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
       >
-        <span className="sr-only">Loading...</span>
-      </div>
+        {label}
+      </output>
+      <span
+        aria-hidden="true"
+        className={`inline-block animate-spin rounded-full border-b-2 border-current ${sizeClasses[size]}`}
+      />
       {text && <p className="text-sm text-gray-600">{text}</p>}
     </div>
   )
