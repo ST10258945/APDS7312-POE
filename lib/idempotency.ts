@@ -1,4 +1,4 @@
-import { createHash } from 'crypto'
+import { createHash } from 'node:crypto'
 
 type Entry<T = unknown> = { bodyHash: string; expiresAt: number; responseJson?: T }
 
@@ -21,10 +21,16 @@ export function rememberRequest<T = unknown>(key: string, route: string, body: u
   const fullKey = `${route}:${key}`
   const hash = sha256(typeof body === 'string' ? body : JSON.stringify(body ?? {}))
   const existing = store.get(fullKey)
+  const hit = existing?.bodyHash === hash ? existing as Entry<T> : null;
+  
   return {
-    hit: (!!existing && existing.bodyHash === hash ? existing : null) as Entry<T> | null,
+    hit,
     write: (responseJson: T) => {
-      store.set(fullKey, { bodyHash: hash, expiresAt: now + TTL_MS, responseJson })
+      store.set(fullKey, { 
+        bodyHash: hash, 
+        expiresAt: now + TTL_MS, 
+        responseJson 
+      });
     }
   }
 }
