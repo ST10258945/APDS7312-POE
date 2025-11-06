@@ -143,7 +143,16 @@ export function Modal({
     }
   }, [isOpen])
 
-  // Handle exit animation
+  const handleBackdropClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!closeOnBackdropClick) return
+      if (event.target === event.currentTarget) {
+        handleClose()
+      }
+    },
+    [closeOnBackdropClick, handleClose]
+  )
+
   if (!isOpen && !isAnimating) return null
 
   return (
@@ -152,7 +161,7 @@ export function Modal({
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{ zIndex }}
-      onClick={closeOnBackdropClick ? handleClose : undefined}
+      onClick={handleBackdropClick}
       onKeyDown={(e) => {
         if (!closeOnBackdropClick) return
         if (e.key === 'Enter' || e.key === ' ') {
@@ -168,7 +177,6 @@ export function Modal({
       <div
         ref={modalRef}
         className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
       >
         <div
           ref={contentRef}

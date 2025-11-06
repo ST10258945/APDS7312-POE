@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
 import { LoadingSpinner, Modal, useToast, Button } from '@/app/components'
@@ -36,28 +37,29 @@ export default function EmployeeDashboardPage() {
     payment: Payment | null
   }>({ isOpen: false, type: null, payment: null })
 
-  useEffect(() => {
-    loadPayments()
-  }, [])
-
-  const loadPayments = async () => {
+  const loadPayments = useCallback(async () => {
     setLoading(true)
 
-    const response = await api.get<{ payments: Payment[] }>('/api/payments/list')
+    try {
+      const response = await api.get<{ payments: Payment[] }>('/api/payments/list')
 
-    if (response.ok && response.data) {
-      setPayments(response.data.payments || [])
-    } else {
-      const errorMessage = response.userMessage || response.error || 'Failed to load payments'
-      toast.error(errorMessage)
-      // If unauthorized, redirect to login
-      if (response.error?.includes('authenticated') || response.error?.includes('Forbidden')) {
-        router.push('/employee/login')
+      if (response.ok && response.data) {
+        setPayments(response.data.payments || [])
+      } else {
+        const errorMessage = response.userMessage || response.error || 'Failed to load payments'
+        toast.error(errorMessage)
+        if (response.error?.includes('authenticated') || response.error?.includes('Forbidden')) {
+          router.push('/employee/login')
+        }
       }
+    } finally {
+      setLoading(false)
     }
+  }, [router, toast])
 
-    setLoading(false)
-  }
+  useEffect(() => {
+    void loadPayments()
+  }, [loadPayments])
 
   const handleLogout = async () => {
     await api.post('/api/logout', {})
@@ -320,16 +322,17 @@ export default function EmployeeDashboardPage() {
             <div className="flex gap-3 justify-end">
               <Button
                 variant="secondary"
+                portal="employee"
                 onClick={() => setConfirmModal({ isOpen: false, type: null, payment: null })}
                 disabled={actionLoading}
               >
                 Cancel
               </Button>
               <Button
-                variant={confirmModal.type === 'verify' ? 'primary' : 'primary'}
+                variant="primary"
+                portal="employee"
                 onClick={confirmAction}
                 loading={actionLoading}
-                className={confirmModal.type === 'submit' ? 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500' : ''}
               >
                 {confirmModal.type === 'verify' ? 'Verify Payment' : 'Submit to SWIFT'}
               </Button>
