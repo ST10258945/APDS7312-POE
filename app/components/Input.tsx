@@ -20,7 +20,7 @@ export function Input({
   className = '',
   id,
   ...props
-}: InputProps) {
+}: Readonly<InputProps>) {
   const normalizedLabel = label?.toLowerCase().replaceAll(/\s+/g, '-')
   const inputId = id || (normalizedLabel ? `input-${normalizedLabel}` : undefined)
   const errorStyles = error

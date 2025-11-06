@@ -36,7 +36,7 @@ export async function apiRequest<T = unknown>(
 
   try {
     // Get CSRF token for mutation requests
-    const headers = new Headers(fetchOptions.headers as HeadersInit | undefined)
+    const headers = new Headers(fetchOptions.headers)
 
     if (requireCsrf) {
       const csrfToken = await fetchCsrfToken()
