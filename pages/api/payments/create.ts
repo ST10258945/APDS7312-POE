@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import { verifyJwt, type UserJwtPayload } from '@/lib/auth'
 import { appendAuditLog } from '@/lib/audit'
 import { rememberRequest } from '@/lib/idempotency'
-import { randomUUID } from 'node:crypto'
+import { randomUUID } from 'crypto'
 
 import {
   validateAmount,
