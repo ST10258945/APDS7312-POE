@@ -243,11 +243,29 @@ export default function AuditLogsPage() {
 
       {/* Details Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedLog(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          role="button"
+          tabIndex={0}
+          aria-label="Close audit log details"
+          onClick={() => setSelectedLog(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setSelectedLog(null)
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="audit-log-details-title"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-white">{selectedLog.action}</h3>
-              <button onClick={() => setSelectedLog(null)} className="text-white text-2xl">×</button>
+              <h3 id="audit-log-details-title" className="text-lg font-semibold text-white">{selectedLog.action}</h3>
+              <button onClick={() => setSelectedLog(null)} className="text-white text-2xl" type="button" aria-label="Close dialog">×</button>
             </div>
             <div className="overflow-auto flex-1 p-6 space-y-4">
               <div>
