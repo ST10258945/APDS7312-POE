@@ -8,7 +8,7 @@
     "dev:https": "local-ssl-proxy --source 3443 --target 3001 --cert certs/localhost-cert.pem --key certs/localhost-key.pem",
     "build": "next build",
     "start": "next start -p 3000",
-    "start:https": "node server.js",
+    "start:https": "node server.mjs",
     "generate-certs": "powershell -ExecutionPolicy Bypass -File generate-ssl.ps1",
     "lint": "eslint .",
     "postinstall": "prisma generate",
