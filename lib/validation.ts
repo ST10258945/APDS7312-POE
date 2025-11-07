@@ -30,7 +30,7 @@ export const REGEX_PATTERNS = {
   ACCOUNT_NUMBER:/^\d{8,12}$/,
 
   // SWIFT/BIC Code: 8 or 11 characters, letters and numbers only
-  SWIFT_CODE: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/,
+  SWIFT_CODE: /^[A-Z0-9]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/,
 
   // ISO 4217 Currency codes: 3 uppercase letters
   CURRENCY_CODE: /^[A-Z]{3}$/,
