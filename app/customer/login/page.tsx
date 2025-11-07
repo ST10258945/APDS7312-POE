@@ -15,9 +15,27 @@ export default function CustomerLoginPage() {
   const [allowRegistration, setAllowRegistration] = useState(false)
 
   useEffect(() => {
-    // Check if registration is enabled
-    const isEnabled = process.env.NEXT_PUBLIC_ALLOW_REGISTRATION === 'true'
-    setAllowRegistration(isEnabled)
+    // Check if registration is enabled by testing the API
+    const checkRegistration = async () => {
+      try {
+        const response = await api.post('/api/customer/register', {
+          fullName: '',
+          idNumber: '',
+          accountNumber: '',
+          username: '',
+          email: '',
+          password: '',
+        })
+        // If we get error 'Registration disabled', it's disabled
+        // Otherwise (validation error or success), it's enabled
+        const isDisabled = response.error?.includes('disabled')
+        setAllowRegistration(!isDisabled)
+      } catch {
+        // If error, assume disabled for safety
+        setAllowRegistration(false)
+      }
+    }
+    checkRegistration()
   }, [])
 
   const handleSubmit = async (e: FormEvent) => {
