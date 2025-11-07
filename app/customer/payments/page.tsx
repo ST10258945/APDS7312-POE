@@ -28,7 +28,7 @@ export default function CustomerPaymentsPage() {
 
   const handleLogout = async () => {
     await api.post('/api/logout', {})
-    router.push('/customer/login')
+    router.push('/')
   }
 
   const handleSubmit = async (e: FormEvent) => {
