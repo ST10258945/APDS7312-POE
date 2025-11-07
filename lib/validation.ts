@@ -44,8 +44,8 @@ export const REGEX_PATTERNS = {
   // Payment provider name: Letters, spaces, and safe punctuation only
   PROVIDER_NAME: /^[a-zA-Z\s&.-]{2,50}$/,
 
-  // Recipient name: Same as full name but allow for company names
-  RECIPIENT_NAME: /^[a-zA-ZÀ-ÿĀ-žА-я0-9\s'.-]{2,100}$/,
+  // Recipient name: Letters (required), spaces, numbers, apostrophes, dots, hyphens - must contain at least one letter
+  RECIPIENT_NAME: /^(?=.*[a-zA-ZÀ-ÿĀ-žА-я])[a-zA-ZÀ-ÿĀ-žА-я0-9\s'.-]{2,100}$/,
 
   // Payment reference: Alphanumeric with safe special characters
   PAYMENT_REFERENCE: /^[A-Za-z0-9\s_.-]{1,50}$/,
