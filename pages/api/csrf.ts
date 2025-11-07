@@ -13,5 +13,5 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
     maxAge: 60 * 30, // 30 min
     httpOnly: false, // Allow reading in client for API testing
   }))
-  res.status(200).json({ token })
+  res.status(200).json({ csrfToken: token })
 }

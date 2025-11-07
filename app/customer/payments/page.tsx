@@ -4,6 +4,14 @@ import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
 import { Alert, Button, Input, useToast } from '@/app/components'
+import {
+  validateAmount,
+  validateCurrencyCode,
+  validateRecipientName,
+  validateAccountNumber,
+  validateSwiftCode,
+  validatePaymentReference,
+} from '@/lib/validation'
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'ZAR', 'AUD', 'CAD', 'CHF', 'CNY', 'INR']
 
@@ -21,9 +29,43 @@ export default function CustomerPaymentsPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof formData, string>>>({})
+
+  // Validator map
+  const validators: Record<string, (value: string) => { isValid: boolean; error?: string }> = {
+    amount: validateAmount,
+    currency: validateCurrencyCode,
+    recipientName: validateRecipientName,
+    recipientAccount: validateAccountNumber,
+    swiftCode: validateSwiftCode,
+    paymentReference: validatePaymentReference,
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+
+    let err = ''
+    const validator = validators[name]
+    if (validator) {
+      const result = validator(value)
+      err = result.isValid ? '' : result.error || 'Invalid'
+    }
+    setFieldErrors((prev) => ({ ...prev, [name]: err }))
+  }
+
+  const validateAll = () => {
+    const errors: Partial<Record<keyof typeof formData, string>> = {}
+    const r1 = validateAmount(formData.amount); if (!r1.isValid) errors.amount = r1.error
+    const r2 = validateCurrencyCode(formData.currency); if (!r2.isValid) errors.currency = r2.error
+    const r3 = validateRecipientName(formData.recipientName); if (!r3.isValid) errors.recipientName = r3.error
+    const r4 = validateAccountNumber(formData.recipientAccount); if (!r4.isValid) errors.recipientAccount = r4.error
+    const r5 = validateSwiftCode(formData.swiftCode); if (!r5.isValid) errors.swiftCode = r5.error
+    if (formData.paymentReference) {
+      const r6 = validatePaymentReference(formData.paymentReference); if (!r6.isValid) errors.paymentReference = r6.error
+    }
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const handleLogout = async () => {
@@ -37,6 +79,12 @@ export default function CustomerPaymentsPage() {
     setLoading(true)
 
     try {
+      if (!validateAll()) {
+        setError('Please correct the highlighted fields')
+        setLoading(false)
+        return
+      }
+
       const response = await api.post('/api/payments/create', formData)
 
       if (response.ok) {
@@ -102,6 +150,7 @@ export default function CustomerPaymentsPage() {
                 onChange={handleChange}
                 placeholder="e.g., 1000.50"
                 helperText="Up to 2 decimal places"
+                error={fieldErrors.amount}
                 required
                 disabled={loading}
                 id="amount"
@@ -116,7 +165,7 @@ export default function CustomerPaymentsPage() {
                   name="currency"
                   value={formData.currency}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
+                  className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:border-transparent text-gray-900 ${fieldErrors.currency ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-teal-500'}`}
                   required
                   disabled={loading}
                 >
@@ -126,6 +175,7 @@ export default function CustomerPaymentsPage() {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.currency && <p className="mt-1 text-sm text-red-600">{fieldErrors.currency}</p>}
               </div>
 
               <div>
@@ -153,6 +203,7 @@ export default function CustomerPaymentsPage() {
                 onChange={handleChange}
                 placeholder="e.g., ABCDUS33XXX"
                 helperText="8 or 11 characters"
+                error={fieldErrors.swiftCode}
                 required
                 disabled={loading}
                 id="swiftCode"
@@ -166,6 +217,7 @@ export default function CustomerPaymentsPage() {
                   value={formData.recipientName}
                   onChange={handleChange}
                   placeholder="Full name of recipient"
+                  error={fieldErrors.recipientName}
                   required
                   disabled={loading}
                   id="recipientName"
@@ -180,6 +232,7 @@ export default function CustomerPaymentsPage() {
                   value={formData.recipientAccount}
                   onChange={handleChange}
                   placeholder="8-12 digit account number"
+                  error={fieldErrors.recipientAccount}
                   required
                   disabled={loading}
                   id="recipientAccount"
@@ -194,6 +247,7 @@ export default function CustomerPaymentsPage() {
                   value={formData.paymentReference}
                   onChange={handleChange}
                   placeholder="e.g., Invoice #12345"
+                  error={fieldErrors.paymentReference}
                   disabled={loading}
                   id="paymentReference"
                 />
