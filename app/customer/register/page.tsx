@@ -28,29 +28,25 @@ export default function CustomerRegisterPage() {
   const [loading, setLoading] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof formData, string>>>({})
 
+  // Validator map to reduce cognitive complexity
+  const validators: Record<string, (value: string) => { isValid: boolean; error?: string }> = {
+    fullName: validateFullName,
+    idNumber: validateSAIdNumber,
+    accountNumber: validateAccountNumber,
+    username: validateUsername,
+    email: validateEmail,
+    password: validatePassword,
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
 
     let err = ''
-    if (name === 'fullName') {
-      const r = validateFullName(value)
-      err = r.isValid ? '' : r.error || 'Invalid'
-    } else if (name === 'idNumber') {
-      const r = validateSAIdNumber(value)
-      err = r.isValid ? '' : r.error || 'Invalid'
-    } else if (name === 'accountNumber') {
-      const r = validateAccountNumber(value)
-      err = r.isValid ? '' : r.error || 'Invalid'
-    } else if (name === 'username') {
-      const r = validateUsername(value)
-      err = r.isValid ? '' : r.error || 'Invalid'
-    } else if (name === 'email') {
-      const r = validateEmail(value)
-      err = r.isValid ? '' : r.error || 'Invalid'
-    } else if (name === 'password') {
-      const r = validatePassword(value)
-      err = r.isValid ? '' : r.error || 'Invalid'
+    const validator = validators[name]
+    if (validator) {
+      const result = validator(value)
+      err = result.isValid ? '' : result.error || 'Invalid'
     }
     setFieldErrors((prev) => ({ ...prev, [name]: err }))
   }
