@@ -1,4 +1,5 @@
 import { createServer } from 'node:https';
+import { createServer as createHttpServer } from 'node:http';
 import { parse } from 'node:url';
 import next from 'next';
 import fs from 'node:fs';
@@ -27,6 +28,8 @@ try {
 
   createServer(httpsOptions, (req, res) => {
     try {
+      // Set x-forwarded-proto header so middleware detects HTTPS
+      req.headers['x-forwarded-proto'] = 'https';
       const parsedUrl = parse(req.url, true);
       handle(req, res, parsedUrl);
     } catch (err) {
@@ -44,6 +47,18 @@ try {
     console.log('🔒 SSL/TLS enabled with self-signed certificate');
     console.log('⚠️  Browser will show security warning - this is normal for self-signed certs');
     console.log('📊 Ready for POE testing with full SSL compliance!');
+  });
+
+  // HTTP redirect server (redirects to HTTPS)
+  createHttpServer((req, res) => {
+    res.writeHead(301, { Location: `https://localhost:3000${req.url}` });
+    res.end();
+  }).listen(3001, (err) => {
+    if (err) {
+      console.error('❌ Failed to start HTTP redirect server:', err);
+      process.exit(1);
+    }
+    console.log('📍 HTTP redirect server running on: http://localhost:3001 → https://localhost:3000');
   });
 } catch (e) {
   console.error('❌ Failed to prepare Next app:', e);
