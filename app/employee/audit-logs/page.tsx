@@ -226,35 +226,55 @@ export default function AuditLogsPage() {
                           <button
                             onClick={() => {
                               const modal = document.createElement('div')
-                              modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
-                              modal.innerHTML = `
-                                <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-96 overflow-auto">
-                                  <div class="sticky top-0 bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4 flex justify-between items-center">
-                                    <h3 class="text-lg font-semibold text-white">Audit Log Details</h3>
-                                    <button class="text-white hover:text-gray-200 text-2xl">&times;</button>
-                                  </div>
-                                  <div class="p-6 space-y-4">
-                                    ${Object.entries(log.metadata).length === 0 
-                                      ? '<p class="text-gray-600 text-sm italic">No additional details</p>'
-                                      : Object.entries(log.metadata).map(([key, value]) => `
-                                        <div class="border-b border-gray-200 pb-4 last:border-b-0">
-                                          <p class="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2">
-                                            ${key.replace(/([A-Z])/g, ' $1').trim()}
-                                          </p>
-                                          <div class="bg-gray-50 rounded px-3 py-2 border border-gray-200">
-                                            <p class="text-sm text-gray-800 break-all font-mono">
-                                              ${typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
-                                            </p>
-                                          </div>
-                                        </div>
-                                      `).join('')
-                                    }
-                                  </div>
-                                </div>
+                              modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'
+                              
+                              const content = document.createElement('div')
+                              content.className = 'bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-auto flex flex-col'
+                              
+                              const header = document.createElement('div')
+                              header.className = 'sticky top-0 bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4 flex justify-between items-center'
+                              header.innerHTML = `
+                                <h3 class="text-lg font-semibold text-white">Audit Log Details</h3>
+                                <button class="text-white hover:text-gray-200 text-2xl leading-none">&times;</button>
                               `
-                              document.body.appendChild(modal)
-                              modal.querySelector('button').onclick = () => modal.remove()
+                              
+                              const body = document.createElement('div')
+                              body.className = 'p-6 space-y-4 overflow-auto'
+                              
+                              if (Object.entries(log.metadata).length === 0) {
+                                body.innerHTML = '<p class="text-gray-600 text-sm italic">No additional details</p>'
+                              } else {
+                                Object.entries(log.metadata).forEach(([key, value]) => {
+                                  const section = document.createElement('div')
+                                  section.className = 'border-b border-gray-200 pb-4 last:border-b-0'
+                                  
+                                  const label = document.createElement('p')
+                                  label.className = 'text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2'
+                                  label.textContent = key.replace(/([A-Z])/g, ' $1').trim()
+                                  
+                                  const valueBox = document.createElement('div')
+                                  valueBox.className = 'bg-gray-50 rounded px-3 py-2 border border-gray-200'
+                                  
+                                  const valueText = document.createElement('p')
+                                  valueText.className = 'text-sm text-gray-800 break-all font-mono whitespace-pre-wrap'
+                                  valueText.textContent = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)
+                                  
+                                  valueBox.appendChild(valueText)
+                                  section.appendChild(label)
+                                  section.appendChild(valueBox)
+                                  body.appendChild(section)
+                                })
+                              }
+                              
+                              content.appendChild(header)
+                              content.appendChild(body)
+                              modal.appendChild(content)
+                              
+                              const closeBtn = header.querySelector('button')
+                              closeBtn!.onclick = () => modal.remove()
                               modal.onclick = (e) => e.target === modal && modal.remove()
+                              
+                              document.body.appendChild(modal)
                             }}
                             className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
                           >
