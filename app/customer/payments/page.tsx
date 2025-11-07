@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
-import { Alert, Button, Input, useToast } from '@/app/components'
+import { Alert, Button, Input, useToast, TopNav } from '@/app/components'
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'ZAR', 'AUD', 'CAD', 'CHF', 'CNY', 'INR']
 
@@ -67,10 +67,12 @@ export default function CustomerPaymentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {toast.ToastContainer()}
-      {/* Header */}
-      <header className="bg-white shadow-sm">
+    <>
+      <TopNav />
+      <div className="min-h-screen bg-gray-50">
+        {toast.ToastContainer()}
+        {/* Header */}
+        <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">GlobeWire Customer Portal</h1>
@@ -218,6 +220,7 @@ export default function CustomerPaymentsPage() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </>
   )
 }

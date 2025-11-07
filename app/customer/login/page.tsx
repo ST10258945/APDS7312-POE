@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
-import { Alert, Button, Input } from '@/app/components'
+import { Alert, Button, Input, TopNav } from '@/app/components'
 
 export default function CustomerLoginPage() {
   const router = useRouter()
@@ -12,6 +12,13 @@ export default function CustomerLoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [allowRegistration, setAllowRegistration] = useState(false)
+
+  useEffect(() => {
+    // Check if registration is enabled
+    const isEnabled = process.env.NEXT_PUBLIC_ALLOW_REGISTRATION === 'true'
+    setAllowRegistration(isEnabled)
+  }, [])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -39,8 +46,10 @@ export default function CustomerLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
+    <>
+      <TopNav />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 px-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             GlobeWire Customer Portal
@@ -90,24 +99,27 @@ export default function CustomerLoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Don&apos;t have an account?{' '}
-            <a href="/customer/register" className="text-teal-600 hover:text-teal-700 font-medium">
-              Register here
-            </a>
-          </p>
-        </div>
+          {allowRegistration && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Don&apos;t have an account?{' '}
+                <a href="/customer/register" className="text-teal-600 hover:text-teal-700 font-medium">
+                  Register here
+                </a>
+              </p>
+            </div>
+          )}
 
-        <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-          <a
-            href="/employee/login"
-            className="text-sm text-teal-600 hover:text-teal-700 font-medium"
-          >
-            Employee Portal →
-          </a>
+          <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+            <a
+              href="/employee/login"
+              className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+            >
+              Employee Portal →
+            </a>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

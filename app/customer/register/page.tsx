@@ -3,7 +3,15 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
-import { Alert, Button, Input, useToast } from '@/app/components'
+import { Alert, Button, Input, useToast, TopNav } from '@/app/components'
+import {
+  validateFullName,
+  validateSAIdNumber,
+  validateAccountNumber,
+  validateUsername,
+  validateEmail,
+  validatePassword,
+} from '@/lib/validation'
 
 export default function CustomerRegisterPage() {
   const router = useRouter()
@@ -18,9 +26,45 @@ export default function CustomerRegisterPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof formData, string>>>({})
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+
+    let err = ''
+    if (name === 'fullName') {
+      const r = validateFullName(value)
+      err = r.isValid ? '' : r.error || 'Invalid'
+    } else if (name === 'idNumber') {
+      const r = validateSAIdNumber(value)
+      err = r.isValid ? '' : r.error || 'Invalid'
+    } else if (name === 'accountNumber') {
+      const r = validateAccountNumber(value)
+      err = r.isValid ? '' : r.error || 'Invalid'
+    } else if (name === 'username') {
+      const r = validateUsername(value)
+      err = r.isValid ? '' : r.error || 'Invalid'
+    } else if (name === 'email') {
+      const r = validateEmail(value)
+      err = r.isValid ? '' : r.error || 'Invalid'
+    } else if (name === 'password') {
+      const r = validatePassword(value)
+      err = r.isValid ? '' : r.error || 'Invalid'
+    }
+    setFieldErrors((prev) => ({ ...prev, [name]: err }))
+  }
+
+  const validateAll = () => {
+    const errors: Partial<Record<keyof typeof formData, string>> = {}
+    const r1 = validateFullName(formData.fullName); if (!r1.isValid) errors.fullName = r1.error
+    const r2 = validateSAIdNumber(formData.idNumber); if (!r2.isValid) errors.idNumber = r2.error
+    const r3 = validateAccountNumber(formData.accountNumber); if (!r3.isValid) errors.accountNumber = r3.error
+    const r4 = validateUsername(formData.username); if (!r4.isValid) errors.username = r4.error
+    const r5 = validateEmail(formData.email); if (!r5.isValid) errors.email = r5.error
+    const r6 = validatePassword(formData.password); if (!r6.isValid) errors.password = r6.error
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -29,6 +73,10 @@ export default function CustomerRegisterPage() {
     setLoading(true)
 
     try {
+      if (!validateAll()) {
+        setError('Please correct the highlighted fields')
+        return
+      }
       const response = await api.post('/api/customer/register', formData)
 
       if (response.ok) {
@@ -46,8 +94,10 @@ export default function CustomerRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 px-4 py-12">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-xl p-8">
+    <>
+      <TopNav />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 px-4 py-12">
+        <div className="max-w-2xl w-full bg-white rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Create Customer Account
@@ -67,6 +117,7 @@ export default function CustomerRegisterPage() {
               value={formData.fullName}
               onChange={handleChange}
               placeholder="John Doe"
+              error={fieldErrors.fullName}
               required
               disabled={loading}
               id="fullName"
@@ -80,6 +131,7 @@ export default function CustomerRegisterPage() {
               onChange={handleChange}
               placeholder="13-digit SA ID"
               helperText="13-digit South African ID number"
+              error={fieldErrors.idNumber}
               required
               disabled={loading}
               id="idNumber"
@@ -93,6 +145,7 @@ export default function CustomerRegisterPage() {
               onChange={handleChange}
               placeholder="8-12 digits"
               helperText="8-12 digit account number"
+              error={fieldErrors.accountNumber}
               required
               disabled={loading}
               id="accountNumber"
@@ -105,6 +158,7 @@ export default function CustomerRegisterPage() {
               value={formData.username}
               onChange={handleChange}
               placeholder="johndoe123"
+              error={fieldErrors.username}
               required
               disabled={loading}
               id="username"
@@ -117,6 +171,7 @@ export default function CustomerRegisterPage() {
               value={formData.email}
               onChange={handleChange}
               placeholder="john@example.com"
+              error={fieldErrors.email}
               required
               disabled={loading}
               id="email"
@@ -130,6 +185,7 @@ export default function CustomerRegisterPage() {
               onChange={handleChange}
               placeholder="Min 8 chars, include A-Z, a-z, 0-9, !@#"
               helperText="Min 8 chars, include uppercase, lowercase, number, special char"
+              error={fieldErrors.password}
               required
               disabled={loading}
               id="password"
@@ -141,15 +197,16 @@ export default function CustomerRegisterPage() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <a href="/customer/login" className="text-teal-600 hover:text-teal-700 font-medium">
-              Sign in here
-            </a>
-          </p>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <a href="/customer/login" className="text-teal-600 hover:text-teal-700 font-medium">
+                Sign in here
+              </a>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
