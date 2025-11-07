@@ -83,16 +83,18 @@ export default function AuditLogsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters */}
-        <div className="mb-6 bg-white rounded-lg shadow p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mb-6 bg-white rounded-lg shadow p-6 space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="entity-type" className="block text-sm font-medium text-gray-700 mb-2">
                 Entity Type
               </label>
               <select
+                id="entity-type"
                 value={filter.entityType || ''}
                 onChange={(e) => setFilter({ ...filter, entityType: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="">All Types</option>
                 <option value="Payment">Payment</option>
@@ -102,13 +104,14 @@ export default function AuditLogsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="action" className="block text-sm font-medium text-gray-700 mb-2">
                 Action
               </label>
               <select
+                id="action"
                 value={filter.action || ''}
                 onChange={(e) => setFilter({ ...filter, action: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="">All Actions</option>
                 <option value="CREATE">CREATE</option>
@@ -120,13 +123,14 @@ export default function AuditLogsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Limit
+              <label htmlFor="limit" className="block text-sm font-medium text-gray-700 mb-2">
+                Results Per Page
               </label>
               <select
+                id="limit"
                 value={limit}
-                onChange={(e) => setLimit(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                onChange={(e) => setLimit(Number.parseInt(e.target.value))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value={10}>10</option>
                 <option value={50}>50</option>
@@ -170,37 +174,69 @@ export default function AuditLogsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(log.timestamp).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                          {log.entityType}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                          {log.action}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                        {log.entityId.slice(0, 12)}...
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {log.ipAddress || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        <details className="cursor-pointer">
-                          <summary className="text-blue-600 hover:text-blue-700">View</summary>
-                          <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-w-xs">
-                            {JSON.stringify(log.metadata, null, 2)}
-                          </pre>
-                        </details>
-                      </td>
-                    </tr>
-                  ))}
+                  {logs.map((log) => {
+                    const getActionColor = (action: string) => {
+                      if (action.includes('SUCCESS') || action === 'VERIFIED' || action === 'SUBMITTED_TO_SWIFT' || action === 'CREATE') {
+                        return 'bg-green-100 text-green-800'
+                      }
+                      if (action.includes('FAIL') || action.includes('ERROR')) {
+                        return 'bg-red-100 text-red-800'
+                      }
+                      if (action.includes('TOKEN')) {
+                        return 'bg-purple-100 text-purple-800'
+                      }
+                      return 'bg-gray-100 text-gray-800'
+                    }
+
+                    const getEntityColor = (type: string) => {
+                      switch (type) {
+                        case 'Payment':
+                          return 'bg-blue-100 text-blue-800'
+                        case 'Employee':
+                          return 'bg-indigo-100 text-indigo-800'
+                        case 'Customer':
+                          return 'bg-cyan-100 text-cyan-800'
+                        default:
+                          return 'bg-gray-100 text-gray-800'
+                      }
+                    }
+
+                    return (
+                      <tr key={log.id} className="hover:bg-gray-50 transition-colors duration-150">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {new Date(log.timestamp).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getEntityColor(log.entityType)}`}>
+                            {log.entityType}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getActionColor(log.action)}`}>
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-700 bg-gray-50 rounded px-2 py-1">
+                          {log.entityId.slice(0, 12)}...
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.ipAddress || 'N/A'}</code>
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <details className="cursor-pointer group">
+                            <summary className="text-indigo-600 hover:text-indigo-700 font-medium group-open:text-indigo-800">
+                              View Details →
+                            </summary>
+                            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                              <pre className="text-xs overflow-auto max-h-48 max-w-sm text-gray-700">
+                                {JSON.stringify(log.metadata, null, 2)}
+                              </pre>
+                            </div>
+                          </details>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

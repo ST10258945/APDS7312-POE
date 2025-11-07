@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
-import { Alert, Button, Input, useToast } from '@/app/components'
+import { Alert, Button, Input, useToast, Modal } from '@/app/components'
 import {
   validateAmount,
   validateCurrencyCode,
@@ -30,6 +30,8 @@ export default function CustomerPaymentsPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof formData, string>>>({})
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [successPayment, setSuccessPayment] = useState<any>(null)
 
   // Validator map
   const validators: Record<string, (value: string) => { isValid: boolean; error?: string }> = {
@@ -85,11 +87,26 @@ export default function CustomerPaymentsPage() {
         return
       }
 
+      // Show confirmation modal instead of submitting directly
+      setShowConfirmModal(true)
+      setLoading(false)
+    } catch (error) {
+      console.error('Customer payment submission error:', error)
+      setError('Unable to connect to the server. Please check your connection and try again.')
+      setLoading(false)
+    }
+  }
+
+  const confirmPayment = async () => {
+    setLoading(true)
+    setShowConfirmModal(false)
+
+    try {
       const response = await api.post('/api/payments/create', formData)
 
       if (response.ok) {
-        toast.success('Payment created successfully! It will appear on the employee portal for verification.')
-        // Reset form
+        setSuccessPayment(response.data?.payment)
+        // Reset form after successful submission
         setFormData({
           amount: '',
           currency: 'USD',
@@ -272,6 +289,117 @@ export default function CustomerPaymentsPage() {
           </div>
         </div>
       </main>
+
+      {/* Confirmation Modal */}
+      <Modal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title="Confirm Payment Details"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+            <div>
+              <p className="text-xs text-gray-600 font-medium">Amount</p>
+              <p className="text-lg font-semibold text-gray-900">{formData.currency} {formData.amount}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 font-medium">Currency</p>
+              <p className="text-lg font-semibold text-gray-900">{formData.currency}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 font-medium">Recipient Name</p>
+              <p className="text-sm text-gray-900">{formData.recipientName}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 font-medium">Account Number</p>
+              <p className="text-sm font-mono text-gray-900">{formData.recipientAccount}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 font-medium">SWIFT Code</p>
+              <p className="text-sm font-mono text-gray-900">{formData.swiftCode}</p>
+            </div>
+            {formData.paymentReference && (
+              <div>
+                <p className="text-xs text-gray-600 font-medium">Reference</p>
+                <p className="text-sm text-gray-900">{formData.paymentReference}</p>
+              </div>
+            )}
+          </div>
+
+          <p className="text-sm text-gray-600 bg-yellow-50 p-3 rounded border border-yellow-200">
+            ⚠️ Please review all details carefully. Once submitted, the payment will be sent for verification.
+          </p>
+
+          <div className="flex gap-3 justify-end pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => setShowConfirmModal(false)}
+              disabled={loading}
+            >
+              Cancel & Edit
+            </Button>
+            <Button
+              variant="primary"
+              onClick={confirmPayment}
+              loading={loading}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              ✓ Confirm & Submit
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Success Modal */}
+      {successPayment && (
+        <Modal
+          isOpen={!!successPayment}
+          onClose={() => {
+            setSuccessPayment(null)
+          }}
+          title="Payment Submitted Successfully!"
+        >
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-green-800 font-medium mb-3">✓ Your payment has been created and sent for verification</p>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Transaction ID:</span>
+                  <span className="font-mono font-semibold text-gray-900">{successPayment.transactionId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Amount:</span>
+                  <span className="font-semibold text-gray-900">{successPayment.currency} {successPayment.amount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Status:</span>
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">PENDING</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Next steps:</strong> Our team will review your payment details and verify the recipient information. You can check the status in your account.
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-4">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setSuccessPayment(null)
+                  router.push('/customer/payments')
+                }}
+                className="flex-1"
+              >
+                ← Back to Payments
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

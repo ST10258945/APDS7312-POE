@@ -49,8 +49,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // fetch + transition
     const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
-    if (!payment) return res.status(404).json({ error: 'Payment not found' })
-    if (payment.status !== 'PENDING') return res.status(400).json({ error: 'Payment not in PENDING state' })
+    if (!payment) {
+      await appendAuditLog({
+        entityType: 'Payment',
+        entityId: paymentId,
+        action: 'VERIFY_FAILED',
+        ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+        userAgent: req.headers['user-agent'] || null,
+        metadata: { reason: 'Payment not found', by: session.sub, employeeId: session.employeeId }
+      })
+      return res.status(404).json({ error: 'Payment not found' })
+    }
+    if (payment.status !== 'PENDING') {
+      await appendAuditLog({
+        entityType: 'Payment',
+        entityId: paymentId,
+        action: 'VERIFY_FAILED',
+        ipAddress: req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || null,
+        userAgent: req.headers['user-agent'] || null,
+        metadata: { reason: `Payment not in PENDING state, current status: ${payment.status}`, by: session.sub, employeeId: session.employeeId }
+      })
+      return res.status(400).json({ error: 'Payment not in PENDING state' })
+    }
 
     await prisma.payment.update({
       where: { id: paymentId },
