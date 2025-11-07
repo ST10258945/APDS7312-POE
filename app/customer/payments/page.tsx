@@ -102,7 +102,7 @@ export default function CustomerPaymentsPage() {
     setShowConfirmModal(false)
 
     try {
-      const response = await api.post('/api/payments/create', formData)
+      const response = await api.post<{ payment: any }>('/api/payments/create', formData)
 
       if (response.ok) {
         setSuccessPayment(response.data?.payment)
