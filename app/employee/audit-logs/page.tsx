@@ -244,53 +244,32 @@ export default function AuditLogsPage() {
       {/* Details Modal */}
       {selectedLog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedLog(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4 flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold text-white">Audit Log Details</h3>
-                <p className="text-xs text-indigo-100 mt-1">{selectedLog.action} • {new Date(selectedLog.timestamp).toLocaleString()}</p>
-              </div>
-              <button
-                onClick={() => setSelectedLog(null)}
-                className="text-white hover:text-gray-200 text-2xl leading-none"
-              >
-                ×
-              </button>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">{selectedLog.action}</h3>
+              <button onClick={() => setSelectedLog(null)} className="text-white text-2xl">×</button>
             </div>
-            <div className="overflow-auto flex-1 p-6">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 pb-4 border-b">
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase">Entity Type</p>
-                    <p className="text-sm text-gray-900 mt-1">{selectedLog.entityType}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase">IP Address</p>
-                    <p className="text-sm text-gray-900 mt-1">{selectedLog.ipAddress || 'N/A'}</p>
-                  </div>
-                </div>
-
-                {Object.entries(selectedLog.metadata).length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Metadata</p>
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
-                      {Object.entries(selectedLog.metadata).map(([key, value]) => {
-                        const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
-                        return (
-                          <div key={key} className="border-b border-gray-200 pb-3 last:border-b-0">
-                            <p className="text-xs font-semibold text-indigo-700 mb-1">
-                              {key.replace(/([A-Z])/g, ' $1').trim()}
-                            </p>
-                            <div className="text-sm text-gray-800 bg-white p-2 rounded border border-gray-200 font-mono break-all whitespace-normal">
-                              {displayValue}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
+            <div className="overflow-auto flex-1 p-6 space-y-4">
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-1">TIMESTAMP</p>
+                <p className="text-sm text-gray-900">{new Date(selectedLog.timestamp).toLocaleString()}</p>
               </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-1">ENTITY TYPE</p>
+                <p className="text-sm text-gray-900">{selectedLog.entityType}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-1">IP ADDRESS</p>
+                <p className="text-sm text-gray-900">{selectedLog.ipAddress || 'N/A'}</p>
+              </div>
+              {Object.keys(selectedLog.metadata).length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">METADATA</p>
+                  <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto max-h-48 border border-gray-300">
+                    {JSON.stringify(selectedLog.metadata, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           </div>
         </div>
