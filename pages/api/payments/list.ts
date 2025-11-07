@@ -26,8 +26,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     orderBy: { createdAt: 'desc' },
     take: 50,
     select: {
-      id: true, transactionId: true, status: true, amount: true, currency: true,
-      provider: true, recipientName: true, createdAt: true,
+      id: true,
+      transactionId: true,
+      status: true,
+      amount: true,
+      currency: true,
+      provider: true,
+      recipientName: true,
+      recipientAccount: true,
+      swiftCode: true,
+      paymentReference: true,
+      createdAt: true,
+      customer: {
+        select: {
+          fullName: true,
+          email: true,
+        },
+      },
     },
   })
   res.status(200).json({ payments })
