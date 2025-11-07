@@ -298,13 +298,22 @@ export default function EmployeeDashboardPage() {
             <h1 className="text-2xl font-bold text-gray-900">GlobeWire Employee Portal</h1>
             <p className="text-sm text-gray-600">International Payment Verification</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm text-red-600 hover:text-red-700 font-medium transition-colors duration-150"
-            aria-label="Logout"
-          >
-            Logout
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/employee/audit-logs')}
+              className="px-4 py-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors duration-150"
+              aria-label="View audit logs"
+            >
+              📋 Audit Logs
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 text-sm text-red-600 hover:text-red-700 font-medium transition-colors duration-150"
+              aria-label="Logout"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
