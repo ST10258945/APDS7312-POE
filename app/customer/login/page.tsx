@@ -121,6 +121,7 @@ export default function CustomerLoginPage() {
           <p className="text-sm text-gray-600">
             Default credentials:{' '}
             <code className="bg-gray-100 px-2 py-1 rounded text-xs">testcustomer</code> /{' '}
+            <code className="bg-gray-100 px-2 py-1 rounded text-xs">12345678</code> /{' '}
             <code className="bg-gray-100 px-2 py-1 rounded text-xs">TestPass123!</code>
           </p>
         </div>
