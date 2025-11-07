@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
@@ -26,6 +26,10 @@ interface Payment {
 export default function EmployeeDashboardPage() {
   const router = useRouter()
   const toast = useToast()
+  const toastRef = useRef(toast)
+  useEffect(() => {
+    toastRef.current = toast
+  }, [toast])
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'VERIFIED' | 'SUBMITTED'>('ALL')
@@ -47,7 +51,7 @@ export default function EmployeeDashboardPage() {
         setPayments(response.data.payments || [])
       } else {
         const errorMessage = response.userMessage || response.error || 'Failed to load payments'
-        toast.error(errorMessage)
+        toastRef.current.error(errorMessage)
         if (response.error?.includes('authenticated') || response.error?.includes('Forbidden')) {
           router.push('/employee/login')
         }
@@ -55,7 +59,7 @@ export default function EmployeeDashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [router, toast])
+  }, [router])
 
   useEffect(() => {
     void loadPayments()
