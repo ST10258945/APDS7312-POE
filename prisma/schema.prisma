@@ -9,7 +9,7 @@ generator client {
 
 // Basic user model (can be used for general authentication)
 model User {
-  id           String   @id @default(cuid())
+  id           String   @id @default(cuid()) @map("_id")
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
@@ -18,7 +18,7 @@ model User {
 
 // Customer model for international payments
 model Customer {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   fullName      String   // Validated with FULL_NAME regex
   idNumber      String   @unique // South African ID number (13 digits)
   accountNumber String   // Bank account number (8-12 digits)
@@ -36,7 +36,7 @@ model Customer {
 
 // Employee model for staff portal
 model Employee {
-  id           String   @id @default(cuid())
+  id           String   @id @default(cuid()) @map("_id")
   employeeId   String   @unique // Employee ID (alphanumeric)
   fullName     String   // Full name
   email        String   @unique // Email address
@@ -57,7 +57,7 @@ model Employee {
 
 // Payment model for international transactions
 model Payment {
-  id                String          @id @default(cuid())
+  id                String          @id @default(cuid()) @map("_id")
   transactionId     String          @unique // System-generated transaction ID
   
   // Customer information
@@ -105,7 +105,7 @@ enum PaymentStatus {
 
 // Audit log for security monitoring
 model AuditLog {
-  id          String   @id @default(cuid())
+  id          String   @id @default(cuid()) @map("_id")
   entityType  String   // Type of entity (Customer, Employee, Payment)
   entityId    String   // ID of the affected entity
   action      String   // Action performed (CREATE, UPDATE, DELETE, LOGIN, etc.)
