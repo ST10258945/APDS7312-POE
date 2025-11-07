@@ -67,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       metadata: { jti, action, context, employeeId: session.employeeId }
     })
 
-    return res.status(200).json({ token })
+    return res.status(200).json({ actionToken: token })
   } catch (err) {
     console.error('request-action-token error', err)
     return res.status(500).json({ error: 'Internal server error' })

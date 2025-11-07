@@ -22,6 +22,7 @@ export default function AuditLogsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<{ entityType?: string; action?: string }>({})
   const [limit, setLimit] = useState(50)
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
 
   useEffect(() => {
     loadLogs()
@@ -223,16 +224,12 @@ export default function AuditLogsPage() {
                           <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.ipAddress || 'N/A'}</code>
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <details className="cursor-pointer group">
-                            <summary className="text-indigo-600 hover:text-indigo-700 font-medium group-open:text-indigo-800">
-                              View Details →
-                            </summary>
-                            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                              <pre className="text-xs overflow-auto max-h-48 max-w-sm text-gray-700">
-                                {JSON.stringify(log.metadata, null, 2)}
-                              </pre>
-                            </div>
-                          </details>
+                          <button
+                            onClick={() => setSelectedLog(log)}
+                            className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
+                          >
+                            View Details →
+                          </button>
                         </td>
                       </tr>
                     )
@@ -243,6 +240,50 @@ export default function AuditLogsPage() {
           </div>
         )}
       </main>
+
+      {/* Details Modal */}
+      {selectedLog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedLog(null)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">{selectedLog.action}</h3>
+              <button onClick={() => setSelectedLog(null)} className="text-white text-2xl">×</button>
+            </div>
+            <div className="overflow-auto flex-1 p-6 space-y-4">
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-1">TIMESTAMP</p>
+                <p className="text-sm text-gray-900">{new Date(selectedLog.timestamp).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-1">ENTITY TYPE</p>
+                <p className="text-sm text-gray-900">{selectedLog.entityType}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-1">ENTITY ID</p>
+                <p className="text-sm font-mono text-gray-900 break-all">{selectedLog.entityId}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-1">IP ADDRESS</p>
+                <p className="text-sm text-gray-900">{selectedLog.ipAddress || 'N/A'}</p>
+              </div>
+              {selectedLog.userAgent && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">USER AGENT</p>
+                  <p className="text-xs text-gray-700 break-all">{selectedLog.userAgent}</p>
+                </div>
+              )}
+              {Object.keys(selectedLog.metadata).length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">METADATA</p>
+                  <pre className="bg-white p-3 rounded text-xs overflow-auto max-h-48 border border-gray-300 text-gray-900">
+                    {JSON.stringify(selectedLog.metadata, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

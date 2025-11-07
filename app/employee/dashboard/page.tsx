@@ -71,15 +71,20 @@ export default function EmployeeDashboardPage() {
   }
 
   const requestActionToken = async (action: 'VERIFY_PAYMENT' | 'SUBMIT_TO_SWIFT') => {
+    console.log('Requesting action token for:', action)
     const response = await api.post<{ actionToken: string }>('/api/employee/request-action-token', {
       action,
     })
 
+    console.log('Action token response:', { ok: response.ok, hasData: !!response.data, error: response.error })
     if (response.ok && response.data) {
+      console.log('Action token received:', response.data.actionToken?.slice(0, 20) + '...')
       return response.data.actionToken
     }
 
-    throw new Error(response.error || 'Failed to get action token')
+    const errorMsg = response.error || 'Failed to get action token'
+    console.error('Failed to get action token:', errorMsg)
+    throw new Error(errorMsg)
   }
 
   const handleVerify = async (payment: Payment) => {
@@ -110,11 +115,13 @@ export default function EmployeeDashboardPage() {
     try {
       if (confirmModal.type === 'verify') {
         const actionToken = await requestActionToken('VERIFY_PAYMENT')
+        console.log('Verify action - sending request:', { paymentId: payment.id, hasActionToken: !!actionToken })
 
         const response = await api.post('/api/payments/verify', {
           paymentId: payment.id,
           actionToken,
         })
+        console.log('Verify response:', { ok: response.ok, error: response.error })
 
         if (response.ok) {
           toast.success('Payment verified successfully!')

@@ -17,8 +17,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
     if (session?.type !== 'employee') return res.status(401).json({ error: 'Not authenticated' })
 
+    console.log('Verify request body:', { body: req.body, keys: Object.keys(req.body || {}) })
     const { actionToken, paymentId } = req.body || {}
-    if (!actionToken || !paymentId) return res.status(400).json({ error: 'Missing required fields' })
+    console.log('Extracted fields:', { actionToken: !!actionToken, paymentId: !!paymentId, actionTokenLength: actionToken?.length })
+    if (!actionToken || !paymentId) {
+      console.error('Missing required fields:', { actionToken: !!actionToken, paymentId: !!paymentId })
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
 
     // action token must be issued for actions
     const action = verifyJwt<any>(actionToken, { aud: 'action-token', iss: 'bank-portal' })
@@ -48,8 +53,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (consumed) return res.status(403).json({ error: 'Action token already used' })
 
     // fetch + transition
+    console.log('Verify payment debug:', { paymentId })
     const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
+    console.log('Payment found:', { payment: payment ? { id: payment.id, status: payment.status } : null })
+    
     if (!payment) {
+      console.error('Payment not found for ID:', paymentId)
       await appendAuditLog({
         entityType: 'Payment',
         entityId: paymentId,
@@ -60,7 +69,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
       return res.status(404).json({ error: 'Payment not found' })
     }
+    
+    console.log('Payment status check:', { currentStatus: payment.status, expectedStatus: 'PENDING' })
     if (payment.status !== 'PENDING') {
+      console.error('Payment not in PENDING state:', { paymentId, currentStatus: payment.status })
       await appendAuditLog({
         entityType: 'Payment',
         entityId: paymentId,
@@ -69,7 +81,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         userAgent: req.headers['user-agent'] || null,
         metadata: { reason: `Payment not in PENDING state, current status: ${payment.status}`, by: session.sub, employeeId: session.employeeId }
       })
-      return res.status(400).json({ error: 'Payment not in PENDING state' })
+      return res.status(400).json({ error: `Payment not in PENDING state (current: ${payment.status})` })
     }
 
     await prisma.payment.update({
