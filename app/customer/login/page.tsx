@@ -4,6 +4,7 @@ import { useState, FormEvent, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
 import { Alert, Button, Input, TopNav } from '@/app/components'
+import { validateUsername, validateAccountNumber, validatePassword } from '@/lib/validation'
 
 export default function CustomerLoginPage() {
   const router = useRouter()
@@ -13,6 +14,7 @@ export default function CustomerLoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [allowRegistration, setAllowRegistration] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<{ username?: string; accountNumber?: string; password?: string }>({})
 
   useEffect(() => {
     // Check if registration is enabled by testing the API
@@ -38,12 +40,27 @@ export default function CustomerLoginPage() {
     checkRegistration()
   }, [])
 
+  const validateAll = () => {
+    const errors: typeof fieldErrors = {}
+    const r1 = validateUsername(username); if (!r1.isValid) errors.username = r1.error
+    const r2 = validateAccountNumber(accountNumber); if (!r2.isValid) errors.accountNumber = r2.error
+    const r3 = validatePassword(password); if (!r3.isValid) errors.password = r3.error
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
+      if (!validateAll()) {
+        setError('Please correct the highlighted fields')
+        setLoading(false)
+        return
+      }
+
       const response = await api.post('/api/customer/login', {
         username,
         accountNumber,
@@ -84,6 +101,7 @@ export default function CustomerLoginPage() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Enter your username"
+            error={fieldErrors.username}
             required
             disabled={loading}
             id="username"
@@ -96,6 +114,7 @@ export default function CustomerLoginPage() {
             onChange={(e) => setAccountNumber(e.target.value)}
             placeholder="8-12 digit account number"
             helperText="8-12 digit account number"
+            error={fieldErrors.accountNumber}
             required
             disabled={loading}
             id="accountNumber"
@@ -107,6 +126,7 @@ export default function CustomerLoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
+            error={fieldErrors.password}
             required
             disabled={loading}
             id="password"

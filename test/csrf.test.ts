@@ -18,7 +18,7 @@ describe('csrf handler', () => {
     handler(req, res);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body?.token).toMatch(/^[a-f0-9]{64}$/);
+    expect(res.body?.csrfToken).toMatch(/^[a-f0-9]{64}$/);
     expect(res.headers['Set-Cookie']).toMatch(/csrf=/);
   });
 });

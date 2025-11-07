@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
 import { Alert, Button, Input, TopNav } from '@/app/components'
+import { validateUsername, validatePassword } from '@/lib/validation'
 
 export default function EmployeeLoginPage() {
   const router = useRouter()
@@ -11,6 +12,15 @@ export default function EmployeeLoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<{ employeeId?: string; password?: string }>({})
+
+  const validateAll = () => {
+    const errors: typeof fieldErrors = {}
+    const r1 = validateUsername(employeeId); if (!r1.isValid) errors.employeeId = r1.error
+    const r2 = validatePassword(password); if (!r2.isValid) errors.password = r2.error
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -18,6 +28,12 @@ export default function EmployeeLoginPage() {
     setLoading(true)
 
     try {
+      if (!validateAll()) {
+        setError('Please correct the highlighted fields')
+        setLoading(false)
+        return
+      }
+
       const response = await api.post('/api/employee/login', {
         employeeId,
         password,
@@ -55,6 +71,7 @@ export default function EmployeeLoginPage() {
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
             placeholder="e.g., EMP001"
+            error={fieldErrors.employeeId}
             required
             disabled={loading}
             id="employeeId"
@@ -66,6 +83,7 @@ export default function EmployeeLoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
+            error={fieldErrors.password}
             required
             disabled={loading}
             id="password"
