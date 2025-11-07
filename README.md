@@ -14,7 +14,8 @@
 ## 🎥 Demo Videos
 
 **Part 3 Demo Video:**  
-[Link to be added]
+[[Part 3 Link]](https://youtu.be/_J5ldhbyFiU)
+https://youtu.be/_J5ldhbyFiU
 
 **Previous Task 2 Demo:**  
 https://youtu.be/QsTyMCxH0iQ
