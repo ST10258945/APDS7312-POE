@@ -17,8 +17,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
     if (session?.type !== 'employee') return res.status(401).json({ error: 'Not authenticated' })
 
+    console.log('Verify request body:', { body: req.body, keys: Object.keys(req.body || {}) })
     const { actionToken, paymentId } = req.body || {}
-    if (!actionToken || !paymentId) return res.status(400).json({ error: 'Missing required fields' })
+    console.log('Extracted fields:', { actionToken: !!actionToken, paymentId: !!paymentId, actionTokenLength: actionToken?.length })
+    if (!actionToken || !paymentId) {
+      console.error('Missing required fields:', { actionToken: !!actionToken, paymentId: !!paymentId })
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
 
     // action token must be issued for actions
     const action = verifyJwt<any>(actionToken, { aud: 'action-token', iss: 'bank-portal' })
