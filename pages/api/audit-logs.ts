@@ -28,8 +28,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const logs = await prisma.auditLog.findMany({
       where,
       orderBy: { timestamp: 'desc' },
-      take: Math.min(parseInt(limit as string) || 50, 100),
-      skip: parseInt(offset as string) || 0,
+      take: Math.min(Number.parseInt(limit as string) || 50, 100),
+      skip: Number.parseInt(offset as string) || 0,
     })
 
     // Get total count
@@ -39,8 +39,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       logs,
       pagination: {
         total,
-        limit: Math.min(parseInt(limit as string) || 50, 100),
-        offset: parseInt(offset as string) || 0,
+        limit: Math.min(Number.parseInt(limit as string) || 50, 100),
+        offset: Number.parseInt(offset as string) || 0,
       },
     })
   } catch (error) {
