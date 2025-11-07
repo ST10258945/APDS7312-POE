@@ -274,16 +274,19 @@ export default function AuditLogsPage() {
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Metadata</p>
                     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
-                      {Object.entries(selectedLog.metadata).map(([key, value]) => (
-                        <div key={key} className="border-b border-gray-200 pb-3 last:border-b-0">
-                          <p className="text-xs font-semibold text-indigo-700 mb-1">
-                            {key.replace(/([A-Z])/g, ' $1').trim()}
-                          </p>
-                          <p className="text-sm text-gray-800 bg-white p-2 rounded border border-gray-200 font-mono break-all">
-                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                          </p>
-                        </div>
-                      ))}
+                      {Object.entries(selectedLog.metadata).map(([key, value]) => {
+                        const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
+                        return (
+                          <div key={key} className="border-b border-gray-200 pb-3 last:border-b-0">
+                            <p className="text-xs font-semibold text-indigo-700 mb-1">
+                              {key.replace(/([A-Z])/g, ' $1').trim()}
+                            </p>
+                            <div className="text-sm text-gray-800 bg-white p-2 rounded border border-gray-200 font-mono break-all whitespace-normal">
+                              {displayValue}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
