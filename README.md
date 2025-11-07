@@ -156,18 +156,19 @@ $env:NODE_ENV='production'; node server.mjs
 NODE_ENV=production node server.mjs
 ```
 
-Open: https://localhost:3000
+Open: https://localhost:3443
 
 **HTTP to HTTPS Redirect:**
-- HTTP requests to `http://localhost:3001` will redirect to `https://localhost:3000`
+- HTTP requests to `http://localhost:3000` will redirect to `https://localhost:3443`
 - This demonstrates HTTPS enforcement in production
 
 *Note: Production mode enables strict HTTPS enforcement, HSTS headers, and strict CSP. This is the recommended mode for demonstrating full security compliance.*
 
 ### 🌐 Step 5: Open in Browser
 
-- HTTPS (recommended for marking): https://localhost:3000
-- HTTP (development): http://localhost:3000
+- **Development (HTTP)**: http://localhost:3000
+- **Production (HTTPS)**: https://localhost:3443
+- **HTTP to HTTPS Redirect**: http://localhost:3000 → https://localhost:3443
 
 
 ---
