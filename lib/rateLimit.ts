@@ -2,14 +2,14 @@ const buckets = new Map<string, { tokens: number; ts: number }>()
 
 function getCapacity() {
   const raw = process.env.RATE_LIMIT_MAX
-  const parsed = raw ? Number.parseInt(raw, 10) : NaN
+  const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN
   // default capacity 3 if invalid
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 3
 }
 
 function getWindowMs() {
   const raw = process.env.RATE_LIMIT_WINDOW_MS
-  const parsed = raw ? Number.parseInt(raw, 10) : NaN
+  const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN
   // default 60_000ms if invalid
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 60_000
 }
