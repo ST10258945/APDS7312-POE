@@ -15,6 +15,24 @@ import {
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'ZAR', 'AUD', 'CAD', 'CHF', 'CNY', 'INR']
 
+interface Payment {
+  id: string
+  transactionId: string
+  amount: string
+  currency: string
+  provider: string
+  recipientName: string
+  recipientAccount: string
+  swiftCode: string
+  paymentReference?: string
+  status: string
+  createdAt: string
+  customer?: {
+    fullName: string
+    username: string
+  }
+}
+
 export default function CustomerPaymentsPage() {
   const router = useRouter()
   const toast = useToast()
@@ -31,7 +49,7 @@ export default function CustomerPaymentsPage() {
   const [loading, setLoading] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof formData, string>>>({})
   const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [successPayment, setSuccessPayment] = useState<any>(null)
+  const [successPayment, setSuccessPayment] = useState<Payment | null>(null)
 
   // Validator map
   const validators: Record<string, (value: string) => { isValid: boolean; error?: string }> = {
@@ -102,10 +120,10 @@ export default function CustomerPaymentsPage() {
     setShowConfirmModal(false)
 
     try {
-      const response = await api.post<{ payment: any }>('/api/payments/create', formData)
+      const response = await api.post<{ payment: Payment }>('/api/payments/create', formData)
 
-      if (response.ok) {
-        setSuccessPayment(response.data?.payment)
+      if (response.ok && response.data?.payment) {
+        setSuccessPayment(response.data.payment)
         // Reset form after successful submission
         setFormData({
           amount: '',
