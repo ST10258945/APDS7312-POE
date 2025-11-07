@@ -142,13 +142,15 @@ export default function AuditLogsPage() {
         </div>
 
         {/* Logs Table */}
-        {loading ? (
+        {loading && (
           <LoadingSpinner text="Loading audit logs..." />
-        ) : logs.length === 0 ? (
+        )}
+        {!loading && logs.length === 0 && (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <p className="text-gray-600">No audit logs found</p>
           </div>
-        ) : (
+        )}
+        {!loading && logs.length > 0 && (
           <div className="bg-white shadow rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -243,25 +245,24 @@ export default function AuditLogsPage() {
 
       {/* Details Modal */}
       {selectedLog && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          role="button"
-          tabIndex={0}
-          aria-label="Close audit log details"
-          onClick={() => setSelectedLog(null)}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              setSelectedLog(null)
-            }
-          }}
-        >
-          <div
-            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
-            role="dialog"
+        <>
+          {/* Focusable, accessible overlay as a real button */}
+          <button
+            type="button"
+            aria-label="Close audit log details"
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            onClick={() => setSelectedLog(null)}
+          />
+          {/* Semantic dialog container */}
+          <dialog
+            open
+            className="fixed z-[60] bg-white rounded-lg shadow-xl max-w-2xl w-[calc(100%-2rem)] max-h-[80vh] overflow-hidden flex flex-col p-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             aria-modal="true"
             aria-labelledby="audit-log-details-title"
-            onClick={(e) => e.stopPropagation()}
+            onCancel={(e) => {
+              e.preventDefault()
+              setSelectedLog(null)
+            }}
           >
             <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center">
               <h3 id="audit-log-details-title" className="text-lg font-semibold text-white">{selectedLog.action}</h3>
@@ -299,8 +300,8 @@ export default function AuditLogsPage() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
+          </dialog>
+        </>
       )}
     </div>
   )
