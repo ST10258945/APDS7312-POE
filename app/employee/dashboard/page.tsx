@@ -67,7 +67,7 @@ export default function EmployeeDashboardPage() {
 
   const handleLogout = async () => {
     await api.post('/api/logout', {})
-    router.push('/employee/login')
+    router.push('/')
   }
 
   const requestActionToken = async (action: 'VERIFY_PAYMENT' | 'SUBMIT_TO_SWIFT') => {

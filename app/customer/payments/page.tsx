@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
-import { Alert, Button, Input, useToast, TopNav } from '@/app/components'
+import { Alert, Button, Input, useToast } from '@/app/components'
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'ZAR', 'AUD', 'CAD', 'CHF', 'CNY', 'INR']
 
@@ -28,7 +28,7 @@ export default function CustomerPaymentsPage() {
 
   const handleLogout = async () => {
     await api.post('/api/logout', {})
-    router.push('/customer/login')
+    router.push('/')
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -67,9 +67,7 @@ export default function CustomerPaymentsPage() {
   }
 
   return (
-    <>
-      <TopNav />
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
         {toast.ToastContainer()}
         {/* Header */}
         <header className="bg-white shadow-sm">
@@ -220,7 +218,6 @@ export default function CustomerPaymentsPage() {
           </div>
         </div>
       </main>
-      </div>
-    </>
+    </div>
   )
 }
