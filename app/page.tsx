@@ -1,4 +1,38 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+
 export default function Home() {
+  const [allowRegistration, setAllowRegistration] = useState(false)
+
+  useEffect(() => {
+    // Check if registration is enabled by testing the API
+    const checkRegistration = async () => {
+      try {
+        const response = await fetch('/api/customer/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: '',
+            idNumber: '',
+            accountNumber: '',
+            username: '',
+            email: '',
+            password: '',
+          }),
+        })
+        const data = await response.json()
+        // If we get error 'Registration disabled', it's disabled
+        const isDisabled = data.error?.includes('disabled')
+        setAllowRegistration(!isDisabled)
+      } catch {
+        // If error, assume disabled for safety
+        setAllowRegistration(false)
+      }
+    }
+    checkRegistration()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-teal-50 flex items-center justify-center px-4">
       <div className="max-w-4xl w-full text-center">
@@ -20,12 +54,14 @@ export default function Home() {
               Make secure international payments with our SWIFT-enabled platform
             </p>
             <div className="space-y-3">
-              <a
-                href="/customer/register"
-                className="block w-full bg-teal-600 text-white py-3 px-6 rounded-md hover:bg-teal-700 transition-colors font-medium"
-              >
-                Register
-              </a>
+              {allowRegistration && (
+                <a
+                  href="/customer/register"
+                  className="block w-full bg-teal-600 text-white py-3 px-6 rounded-md hover:bg-teal-700 transition-colors font-medium"
+                >
+                  Register
+                </a>
+              )}
               <a
                 href="/customer/login"
                 className="block w-full border-2 border-teal-600 text-teal-600 py-3 px-6 rounded-md hover:bg-teal-50 transition-colors font-medium"
