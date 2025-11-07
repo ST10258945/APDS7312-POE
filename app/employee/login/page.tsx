@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
-import { Alert, Button, Input } from '@/app/components'
+import { Alert, Button, Input, TopNav } from '@/app/components'
 
 export default function EmployeeLoginPage() {
   const router = useRouter()
@@ -37,8 +37,10 @@ export default function EmployeeLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
+    <>
+      <TopNav />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">GlobeWire Employee Portal</h1>
           <p className="text-gray-600">Sign in to verify and process payments</p>
@@ -86,12 +88,13 @@ export default function EmployeeLoginPage() {
           </p>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-          <a href="/customer/login" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-            Customer Portal →
-          </a>
+          <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+            <a href="/customer/login" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+              Customer Portal →
+            </a>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

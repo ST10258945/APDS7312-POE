@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api-client'
-import { Alert, Button, Input, useToast } from '@/app/components'
+import { Alert, Button, Input, useToast, TopNav } from '@/app/components'
 import {
   validateFullName,
   validateSAIdNumber,
@@ -94,8 +94,10 @@ export default function CustomerRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 px-4 py-12">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-xl p-8">
+    <>
+      <TopNav />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 px-4 py-12">
+        <div className="max-w-2xl w-full bg-white rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Create Customer Account
@@ -195,15 +197,16 @@ export default function CustomerRegisterPage() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <a href="/customer/login" className="text-teal-600 hover:text-teal-700 font-medium">
-              Sign in here
-            </a>
-          </p>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <a href="/customer/login" className="text-teal-600 hover:text-teal-700 font-medium">
+                Sign in here
+              </a>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
