@@ -259,17 +259,29 @@ export default function AuditLogsPage() {
                 <p className="text-sm text-gray-900">{selectedLog.entityType}</p>
               </div>
               <div>
+                <p className="text-xs font-semibold text-gray-600 mb-1">ENTITY ID</p>
+                <p className="text-sm font-mono text-gray-900 break-all">{selectedLog.entityId}</p>
+              </div>
+              <div>
                 <p className="text-xs font-semibold text-gray-600 mb-1">IP ADDRESS</p>
                 <p className="text-sm text-gray-900">{selectedLog.ipAddress || 'N/A'}</p>
               </div>
-              {Object.keys(selectedLog.metadata).length > 0 && (
+              {selectedLog.userAgent && (
                 <div>
-                  <p className="text-xs font-semibold text-gray-600 mb-2">METADATA</p>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">USER AGENT</p>
+                  <p className="text-xs text-gray-700 break-all">{selectedLog.userAgent}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-2">METADATA</p>
+                {Object.keys(selectedLog.metadata).length > 0 ? (
                   <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto max-h-48 border border-gray-300">
                     {JSON.stringify(selectedLog.metadata, null, 2)}
                   </pre>
-                </div>
-              )}
+                ) : (
+                  <p className="text-xs text-gray-500 italic">No additional metadata</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
