@@ -106,7 +106,7 @@ function setCsp(res: NextResponse, isProd: boolean) {
       "base-uri 'self'",
       "form-action 'self'",
       "object-src 'none'",
-      "script-src 'self' 'unsafe-inline' blob:",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "connect-src 'self' ws: http://localhost:3000 http://127.0.0.1:3000 https://localhost:3443",
@@ -132,18 +132,18 @@ export function middleware(req: NextRequest) {
   const httpsRedirect = enforceHttps(req, url, isProd);
   if (httpsRedirect) return httpsRedirect;
 
-  // Rate limit for login - DISABLED temporarily for debugging
-  // const ip = getClientIp(req);
-  // if (isLoginPath(path) && !rateLimit(`login:${ip}`)) {
-  //   return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } });
-  // }
+  // Rate limit for login
+  const ip = getClientIp(req);
+  if (isLoginPath(path) && !rateLimit(`login:${ip}`)) {
+    return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } });
+  }
 
-  // General mutating APIs (excluding login) - DISABLED temporarily for debugging
-  // if (isMutatingApiPath(req, path) && !isLoginPath(path)) {
-  //   if (!rateLimit(`mut:${ip}`)) {
-  //     return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } });
-  //   }
-  // }
+  // General mutating APIs (excluding login)
+  if (isMutatingApiPath(req, path) && !isLoginPath(path)) {
+    if (!rateLimit(`mut:${ip}`)) {
+      return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } });
+    }
+  }
 
   // CSRF (skip for exempted)
   const csrfFailure = checkCsrf(req, path);
