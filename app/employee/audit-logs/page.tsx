@@ -272,16 +272,14 @@ export default function AuditLogsPage() {
                   <p className="text-xs text-gray-700 break-all">{selectedLog.userAgent}</p>
                 </div>
               )}
-              <div>
-                <p className="text-xs font-semibold text-gray-600 mb-2">METADATA</p>
-                {Object.keys(selectedLog.metadata).length > 0 ? (
+              {Object.keys(selectedLog.metadata).length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">METADATA</p>
                   <pre className="bg-white p-3 rounded text-xs overflow-auto max-h-48 border border-gray-300 text-gray-900">
                     {JSON.stringify(selectedLog.metadata, null, 2)}
                   </pre>
-                ) : (
-                  <p className="text-xs text-gray-500 italic">No additional metadata</p>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
