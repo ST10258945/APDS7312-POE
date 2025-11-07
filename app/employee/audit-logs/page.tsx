@@ -223,36 +223,43 @@ export default function AuditLogsPage() {
                           <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.ipAddress || 'N/A'}</code>
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <details className="cursor-pointer group">
-                            <summary className="text-indigo-600 hover:text-indigo-700 font-medium group-open:text-indigo-800 flex items-center gap-1">
-                              <span>View Details</span>
-                              <span className="text-xs">→</span>
-                            </summary>
-                            <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-indigo-200 space-y-3">
-                              {Object.entries(log.metadata).length === 0 ? (
-                                <p className="text-gray-600 text-sm italic">No additional details</p>
-                              ) : (
-                                Object.entries(log.metadata).map(([key, value]) => (
-                                  <div key={key} className="border-b border-indigo-100 pb-3 last:border-b-0">
-                                    <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-1">
-                                      {key.replace(/([A-Z])/g, ' $1').trim()}
-                                    </p>
-                                    <div className="bg-white rounded px-3 py-2 border border-indigo-100">
-                                      {typeof value === 'object' ? (
-                                        <pre className="text-xs text-gray-700 overflow-auto max-h-32 font-mono">
-                                          {JSON.stringify(value, null, 2)}
-                                        </pre>
-                                      ) : (
-                                        <p className="text-sm text-gray-800 break-all">
-                                          {String(value)}
-                                        </p>
-                                      )}
-                                    </div>
+                          <button
+                            onClick={() => {
+                              const modal = document.createElement('div')
+                              modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+                              modal.innerHTML = `
+                                <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-96 overflow-auto">
+                                  <div class="sticky top-0 bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4 flex justify-between items-center">
+                                    <h3 class="text-lg font-semibold text-white">Audit Log Details</h3>
+                                    <button class="text-white hover:text-gray-200 text-2xl">&times;</button>
                                   </div>
-                                ))
-                              )}
-                            </div>
-                          </details>
+                                  <div class="p-6 space-y-4">
+                                    ${Object.entries(log.metadata).length === 0 
+                                      ? '<p class="text-gray-600 text-sm italic">No additional details</p>'
+                                      : Object.entries(log.metadata).map(([key, value]) => `
+                                        <div class="border-b border-gray-200 pb-4 last:border-b-0">
+                                          <p class="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2">
+                                            ${key.replace(/([A-Z])/g, ' $1').trim()}
+                                          </p>
+                                          <div class="bg-gray-50 rounded px-3 py-2 border border-gray-200">
+                                            <p class="text-sm text-gray-800 break-all font-mono">
+                                              ${typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      `).join('')
+                                    }
+                                  </div>
+                                </div>
+                              `
+                              document.body.appendChild(modal)
+                              modal.querySelector('button').onclick = () => modal.remove()
+                              modal.onclick = (e) => e.target === modal && modal.remove()
+                            }}
+                            className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
+                          >
+                            View Details →
+                          </button>
                         </td>
                       </tr>
                     )
