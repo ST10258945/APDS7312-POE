@@ -51,7 +51,10 @@ try {
 
   // HTTP redirect server (redirects to HTTPS)
   createHttpServer((req, res) => {
-    res.writeHead(301, { Location: `https://localhost:3443${req.url}` });
+    // Safely construct redirect URL - only use pathname and query, never user input for host
+    const url = new URL(req.url || '/', 'http://localhost');
+    const redirectUrl = `https://localhost:3443${url.pathname}${url.search}`;
+    res.writeHead(301, { Location: redirectUrl });
     res.end();
   }).listen(3000, (err) => {
     if (err) {
