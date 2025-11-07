@@ -275,7 +275,7 @@ export default function AuditLogsPage() {
               <div>
                 <p className="text-xs font-semibold text-gray-600 mb-2">METADATA</p>
                 {Object.keys(selectedLog.metadata).length > 0 ? (
-                  <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto max-h-48 border border-gray-300">
+                  <pre className="bg-white p-3 rounded text-xs overflow-auto max-h-48 border border-gray-300 text-gray-900">
                     {JSON.stringify(selectedLog.metadata, null, 2)}
                   </pre>
                 ) : (
