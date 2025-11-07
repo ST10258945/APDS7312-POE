@@ -243,10 +243,13 @@ export default function AuditLogsPage() {
 
       {/* Details Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-auto flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedLog(null)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-white">Audit Log Details</h3>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Audit Log Details</h3>
+                <p className="text-xs text-indigo-100 mt-1">{selectedLog.action} • {new Date(selectedLog.timestamp).toLocaleString()}</p>
+              </div>
               <button
                 onClick={() => setSelectedLog(null)}
                 className="text-white hover:text-gray-200 text-2xl leading-none"
@@ -254,23 +257,37 @@ export default function AuditLogsPage() {
                 ×
               </button>
             </div>
-            <div className="p-6 space-y-4 overflow-auto">
-              {Object.entries(selectedLog.metadata).length === 0 ? (
-                <p className="text-gray-600 text-sm italic">No additional details</p>
-              ) : (
-                Object.entries(selectedLog.metadata).map(([key, value]) => (
-                  <div key={key} className="border-b border-gray-200 pb-4 last:border-b-0">
-                    <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2">
-                      {key.replace(/([A-Z])/g, ' $1').trim()}
-                    </p>
-                    <div className="bg-gray-50 rounded px-3 py-2 border border-gray-200">
-                      <pre className="text-sm text-gray-800 font-mono whitespace-pre-wrap break-words overflow-auto max-h-32">
-                        {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
-                      </pre>
+            <div className="overflow-auto flex-1 p-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 pb-4 border-b">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase">Entity Type</p>
+                    <p className="text-sm text-gray-900 mt-1">{selectedLog.entityType}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase">IP Address</p>
+                    <p className="text-sm text-gray-900 mt-1">{selectedLog.ipAddress || 'N/A'}</p>
+                  </div>
+                </div>
+
+                {Object.entries(selectedLog.metadata).length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Metadata</p>
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
+                      {Object.entries(selectedLog.metadata).map(([key, value]) => (
+                        <div key={key} className="border-b border-gray-200 pb-3 last:border-b-0">
+                          <p className="text-xs font-semibold text-indigo-700 mb-1">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                          </p>
+                          <p className="text-sm text-gray-800 bg-white p-2 rounded border border-gray-200 font-mono break-all">
+                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
