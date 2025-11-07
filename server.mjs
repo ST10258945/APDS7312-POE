@@ -51,9 +51,12 @@ try {
 
   // HTTP redirect server (redirects to HTTPS)
   createHttpServer((req, res) => {
-    // Safely construct redirect URL - only use pathname and query, never user input for host
-    const url = new URL(req.url || '/', 'http://localhost');
-    const redirectUrl = `https://localhost:3443${url.pathname}${url.search}`;
+    // Safely construct redirect URL - whitelist only safe characters in path
+    const rawPath = req.url || '/';
+    // Only allow alphanumeric, slashes, hyphens, underscores, dots, question marks, ampersands, equals
+    const safePathRegex = /^[a-zA-Z0-9/_.\-?&=]*$/;
+    const path = safePathRegex.test(rawPath) ? rawPath : '/';
+    const redirectUrl = `https://localhost:3443${path}`;
     res.writeHead(301, { Location: redirectUrl });
     res.end();
   }).listen(3000, (err) => {
