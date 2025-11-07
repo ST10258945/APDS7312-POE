@@ -30,8 +30,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  /* Block registration (Disable Registration to complete Point 1) */
-  if (process.env.ALLOW_REGISTRATION !== 'true') {
+  // Allow registration by default in non-production unless explicitly disabled.
+  const allowRegistration =
+    process.env.ALLOW_REGISTRATION === 'true' ||
+    (process.env.NODE_ENV !== 'production' && process.env.ALLOW_REGISTRATION !== 'false')
+
+  if (!allowRegistration) {
     return res.status(403).json({ error: 'Registration disabled' })
   }
 
@@ -136,9 +140,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
+    const xff = req.headers['x-forwarded-for']
+    const ipHeader = Array.isArray(xff) ? xff[0] : xff
     const ip =
-      req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
-      (req.socket as any)?.remoteAddress ||
+      (typeof ipHeader === 'string' ? ipHeader.split(',')[0].trim() : undefined) ||
+      req.socket?.remoteAddress ||
       null
 
     // Log successful registration (for security audit with tamper-evident chain)
