@@ -15,10 +15,8 @@ function getWindowMs() {
 }
 
 function isBypassed() {
-  return (
-    process.env.DISABLE_RATE_LIMIT === 'true' ||
-    process.env.NODE_ENV === 'test' // tests should not be affected
-  )
+  // Only bypass when explicitly requested via env
+  return process.env.DISABLE_RATE_LIMIT === 'true'
 }
 
 export function rateLimit(key: string) {
