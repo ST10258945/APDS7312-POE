@@ -224,13 +224,33 @@ export default function AuditLogsPage() {
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <details className="cursor-pointer group">
-                            <summary className="text-indigo-600 hover:text-indigo-700 font-medium group-open:text-indigo-800">
-                              View Details →
+                            <summary className="text-indigo-600 hover:text-indigo-700 font-medium group-open:text-indigo-800 flex items-center gap-1">
+                              <span>View Details</span>
+                              <span className="text-xs">→</span>
                             </summary>
-                            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                              <pre className="text-xs overflow-auto max-h-48 max-w-sm text-gray-700">
-                                {JSON.stringify(log.metadata, null, 2)}
-                              </pre>
+                            <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-indigo-200 space-y-3">
+                              {Object.entries(log.metadata).length === 0 ? (
+                                <p className="text-gray-600 text-sm italic">No additional details</p>
+                              ) : (
+                                Object.entries(log.metadata).map(([key, value]) => (
+                                  <div key={key} className="border-b border-indigo-100 pb-3 last:border-b-0">
+                                    <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-1">
+                                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                                    </p>
+                                    <div className="bg-white rounded px-3 py-2 border border-indigo-100">
+                                      {typeof value === 'object' ? (
+                                        <pre className="text-xs text-gray-700 overflow-auto max-h-32 font-mono">
+                                          {JSON.stringify(value, null, 2)}
+                                        </pre>
+                                      ) : (
+                                        <p className="text-sm text-gray-800 break-all">
+                                          {String(value)}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))
+                              )}
                             </div>
                           </details>
                         </td>
